@@ -18,39 +18,44 @@ const firebaseConfig = {
   measurementId: "G-L95ESZ482V"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const colorRef = ref(db, "color"); // Realtime Database Pfad
-
-// 3. Farbänderungen empfangen
-onValue(colorRef, snapshot => {
-  const color = snapshot.val() || "white";
-  document.getElementById("square").style.background = color;
-});
-
-// 4. Funktion zum Ändern der Farbe
-window.changeColor = (color) => {
-  set(colorRef, color);
-};
-
-const bgVideo = document.getElementById('bg-video');
-const bgVideoNext = document.getElementById('bg-video-next');
-
-function updateSquare() {
-  const size = Math.min(window.innerWidth, window.innerHeight);
-  const sq = document.getElementById("square");
-  sq.style.width = size + "px";
-  sq.style.height = size + "px";
-}
-
-window.addEventListener("resize", updateSquare);
-updateSquare();
 // Cursor
 function setCursor(fileName) {
   const path = `Assets/cursor/${fileName}`;
   document.body.style.cursor = `url('${path}'), auto`;
   document.querySelectorAll('a, button').forEach(el => el.style.cursor = `url('${path}'), pointer`);
 }
+
+// Firebase initialisieren
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const colorRef = ref(db, "color");
+
+// Farbe ändern (immer verfügbar)
+window.changeColor = (color) => set(colorRef, color);
+
+// Farbänderungen empfangen
+onValue(colorRef, snapshot => {
+  const color = snapshot.val() || "blue";
+  const sq = document.getElementById("square");
+  if (sq) sq.style.background = color;  // Element optional
+});
+
+// DOMContentLoaded für weitere Aktionen
+document.addEventListener('DOMContentLoaded', () => {
+  wrapLetters();
+
+  const sq = document.getElementById("square");
+  if (!sq) return console.warn("#square existiert nicht");
+
+  function updateSquare() {
+    const size = Math.min(window.innerWidth, window.innerHeight);
+    sq.style.width = size + "px";
+    sq.style.height = size + "px";
+  }
+
+  window.addEventListener("resize", updateSquare);
+  updateSquare();
+});
 
 function wrapLetters() {
   const elements = document.querySelectorAll('.letterblink');
@@ -83,8 +88,6 @@ canvas.mount();
 function MakeSquareBlueForAll() {
   changeColor('blue');
 }
-// Aufrufen, nachdem der DOM geladen ist
-document.addEventListener('DOMContentLoaded', wrapLetters);
 /*
 const icon = document.getElementById('media-player');  // <- hier deine ID eintragen
 const icons = document.querySelectorAll('.media-player');

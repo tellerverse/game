@@ -23,6 +23,9 @@ a, button, button > div, a > div, .player-btn, .switch-btn {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  width: 100px;   /* Fallback */
+  height: 100px;  /* Fallback */
+  z-index: 5;     /* Hoch genug, damit es über den Videos liegt */
 }
 /* --- Hintergrundvideo --- */
 .bg-video {

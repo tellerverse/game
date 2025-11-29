@@ -36,7 +36,6 @@ a, button, button > div, a > div, .player-btn, .switch-btn {
   height:100%;
   object-fit:cover;
   z-index:-2;
-  opacity: 0.2; 
   transition: opacity 1s ease, transform 10s linear, filter 10s linear;
 }
 .bg-video.hidden { 

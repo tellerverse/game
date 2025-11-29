@@ -31,18 +31,6 @@ onValue(color, snapshot => {
 //     .catch(err => console.error(err));
 
 // });
-onValue(ref(db, "players"), snapshot => {
-  const now = Date.now();
-  const players = snapshot.val() || {};
-  for (const key in players) {
-    if (now - (players[key].lastSeen || 0) > 15000) { // 15 Sekunden Inaktivität
-      remove(ref(db, `players/${key}`));
-    }
-  }
-});
-setInterval(async () => {
-  set(ref(db, `players/${await getIP()}/lastSeen`), Date.now());
-}, 5000); // alle 5 Sekunden
 
 async function getIP() {
   let ip = "unknown";
@@ -64,7 +52,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const ipMapRef = ref(db, `ipMap/${IP}`);
 
   // Spieler in die DB setzen
-  set(ref(db, `players/${IP}/lastSeen`), Date.now());
   onDisconnect(playerRef).remove();
 
   // Name aus der ipMap holen
@@ -92,8 +79,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const canvas = new Canvas();
   const title = new TextBlock(`Hallo ${name}`, "white");
-  canvas.addSlot(title.makeSlot({ x: 0, y: -300 }));
 
+  // canvas.addSlot(title.makeSlot({ x: 0, y: -300 }));
+  // const players = await get(ref(db, "players"));
+  // let i = 0;
+  // for (const IP in players.val() || {}) {
+  //   const player = players.val()[IP];
+  //   const playerName = new TextBlock(`${player.Name}`, "white");
+  //   canvas.addSlot(playerName.makeSlot({ x: 0, y: -250 + i * 20 }));
+  //   i++;
+  // }
   const img = new TextureBlock("https://picsum.photos/300", 300);
   canvas.addSlot(img.makeSlot({ x: 0, y: 0 }));
 

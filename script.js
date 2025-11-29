@@ -1,7 +1,7 @@
 // 1. Firebase SDK importieren
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js";
 import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
-
+import { Canvas, TextBlock, TextureBlock, ButtonQuiet } from './ui.js';
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -35,7 +35,7 @@ window.changeColor = (color) => set(colorRef, color);
 
 // Farbänderungen empfangen
 onValue(colorRef, snapshot => {
-  const color = snapshot.val() || "blue";
+  const color = snapshot.val() || "white";
   const sq = document.getElementById("square");
   if (sq) sq.style.background = color;  // Element optional
 });
@@ -55,6 +55,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.addEventListener("resize", updateSquare);
   updateSquare();
+  const el = document.createElement("div");
+  el.textContent = "UI Test";
+  document.body.appendChild(el);
+  const canvas = new Canvas();
+
+  const title = new TextBlock("Hallo Welt", "white");
+  canvas.addSlot(title.makeSlot({ x: 0, y: -300 }));
+
+  const img = new TextureBlock("https://picsum.photos/300", 300);
+  canvas.addSlot(img.makeSlot({ x: 0, y: 0 }));
+
+  const btn = new ButtonQuiet("blau");
+  btn.addListener(() => changeColor('#0000ff55'));
+  canvas.addSlot(btn.makeSlot({ x: 0, y: 250 }));
+
+  const btn2 = new ButtonQuiet("grün");
+  btn2.addListener(() => changeColor('#00ff0055'));
+  canvas.addSlot(btn2.makeSlot({ x: 120, y: 250 }));
+
+  const btn3 = new ButtonQuiet("weiß");
+  btn3.addListener(() => changeColor('#ffffff55'));
+  canvas.addSlot(btn3.makeSlot({ x: 240, y: 250 }));
+  canvas.mount();
 });
 
 function wrapLetters() {
@@ -71,23 +94,8 @@ function wrapLetters() {
 }
 
 
-const canvas = new Canvas();
 
-const title = new TextBlock("Hallo Welt", "white");
-canvas.addSlot(title.makeSlot({ x: 0, y: -300 }));
 
-const img = new TextureBlock("https://picsum.photos/300", 300);
-canvas.addSlot(img.makeSlot({ x: 0, y: 0 }));
-
-const btn = new ButtonQuiet("Klick mich");
-btn.addListener(MakeSquareBlueForAll);
-canvas.addSlot(btn.makeSlot({ x: 0, y: 250 }));
-
-canvas.mount();
-
-function MakeSquareBlueForAll() {
-  changeColor('blue');
-}
 /*
 const icon = document.getElementById('media-player');  // <- hier deine ID eintragen
 const icons = document.querySelectorAll('.media-player');

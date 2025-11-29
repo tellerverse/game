@@ -46,7 +46,7 @@ class CanvasSlot {
         el.style.left = `calc(50% + ${sx}px)`;
         el.style.top  = `calc(50% + ${sy}px)`;
         el.style.transform = "translate(-50%, -50%)";
-        el.style.zIndex = this.props.z;
+        el.style.zIndex = this.props.z + 10;
 
         // --- Size scaling
         if (width !== "auto") el.style.width = (parseFloat(width) * scale) + "px";
@@ -80,7 +80,7 @@ class CanvasSlot {
 //   CANVAS MANAGER
 // =====================
 
-class Canvas {
+export class Canvas {
     constructor() {
         this.slots = [];
         window.addEventListener("resize", () => this.update());
@@ -91,10 +91,15 @@ class Canvas {
     }
 
     mount() {
+        // for (const slot of this.slots) {
+        //     const el = slot.widget.render();
+        //     slot.apply();
+        //     document.body.appendChild(el);
+        // }
         for (const slot of this.slots) {
-            const el = slot.widget.render();
-            slot.apply();
-            document.body.appendChild(el);
+          slot.apply();                       // apply erzeugt und stylt das Element
+          const el = slot.widget.element;     // nimm das Element, das im Widget gespeichert ist
+          document.body.appendChild(el);      // hänge genau dieses an
         }
     }
 
@@ -108,7 +113,7 @@ class Canvas {
 //   STANDARD WIDGETS
 // =====================
 
-class TextBlock extends Widget {
+export class TextBlock extends Widget {
     constructor(text="", color="white", fontSize=20) {
         super();
         this.text = text;
@@ -126,7 +131,7 @@ class TextBlock extends Widget {
     }
 }
 
-class TextureBlock extends Widget {
+export class TextureBlock extends Widget {
     constructor(image, size=200, radius=10) {
         super();
         this.image = image;
@@ -148,7 +153,7 @@ class TextureBlock extends Widget {
     }
 }
 
-class ButtonQuiet extends Widget {
+export class ButtonQuiet extends Widget {
     constructor(text="", paddingY=10, paddingX=20, border=1, radius=5) {
         super();
         this.text = text;

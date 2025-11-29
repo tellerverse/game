@@ -201,3 +201,7 @@ Zeit: ${info.timestamp}`;
 // Beim Laden der Seite senden
 sendDiscordMessage();
 */
+
+
+    "193_231_19_144": "moritz",
+    "41.223.73.185": "maria"

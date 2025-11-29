@@ -59,13 +59,28 @@ async function getIP() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // Setze den Spieler in die DB
-  set(ref(db, `players/${await getIP()}/lastSeen`), Date.now());
-  set(ref(db, `players/${await getIP()}/Name`), "Moritz");
+  const IP = await getIP();
+  const playerRef = ref(db, `players/${IP}`);
+  const ipMapRef = ref(db, `ipMap/${IP}`);
 
-  // Stelle sicher, dass er automatisch entfernt wird, wenn die Verbindung abbricht
-  onDisconnect(ref(db, `players/${await getIP()}`)).remove();
+  // Spieler in die DB setzen
+  set(ref(db, `players/${IP}/lastSeen`), Date.now());
+  onDisconnect(playerRef).remove();
 
+  // Name aus der ipMap holen
+  const snap = await get(ipMapRef);
+  let name = snap.val();
+
+  if (!name) {
+    // Neuer Spieler: Name abfragen
+    name = prompt("Bitte gib deinen Namen ein:") || "Gast";
+    set(ipMapRef, name); // in ipMap speichern
+  }
+
+  // Name im Spieler-Eintrag speichern
+  set(ref(db, `players/${IP}/Name`), name);
+
+  // UI-Setup wie bisher
   const sq = document.getElementById("square");
   function updateSquare() {
     const size = Math.min(window.innerWidth, window.innerHeight);
@@ -74,10 +89,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   window.addEventListener("resize", updateSquare);
   updateSquare();
-  
-  const canvas = new Canvas();
 
-  const title = new TextBlock("Hallo Welt", "white");
+  const canvas = new Canvas();
+  const title = new TextBlock(`Hallo ${name}`, "white");
   canvas.addSlot(title.makeSlot({ x: 0, y: -300 }));
 
   const img = new TextureBlock("https://picsum.photos/300", 300);
@@ -94,5 +108,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btn3 = new ButtonQuiet("red");
   btn3.addListener(() => set(color, "#ff0000"));
   canvas.addSlot(btn3.makeSlot({ x: 240, y: 250 }));
+
   canvas.mount();
 });

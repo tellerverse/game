@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js";
-import { getDatabase, ref, onValue, set, push , get} from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
+import { getDatabase, onDisconnect, ref, onValue, set, push , get, remove } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
 import { Canvas, TextBlock, TextureBlock, ButtonQuiet } from './ui.js';
 
 const firebaseConfig = {
@@ -16,7 +16,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const color = ref(db, "color");
-const players = ref(db, "players");
 
 window.changeColor = (newColor) => set(color, newColor);
 
@@ -26,9 +25,12 @@ onValue(color, snapshot => {
   if (sq) sq.style.background = color;
 });
 
-window.addEventListener("beforeunload", (event) => {
-  // set(ref(db, "players"), ref(db, "color") + { test: "data" });
-});
+// window.addEventListener("beforeunload", async (event) => {
+//   remove(ref(db, `players/${await getIP()}`))
+//     .then(() => console.log("Eintrag gelöscht"))
+//     .catch(err => console.error(err));
+
+// });
 
 async function getIP() {
   let ip = "unknown";
@@ -41,12 +43,19 @@ async function getIP() {
   } catch {
     ip = "unknown";
   }
-  return ip;
+  return ip.replace(/\./g, "_");
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  const safeKey = (await getIP()).replace(/\./g, "_");
-  set(ref(db, `players/${safeKey}`), "Moritz");
+  const safeIP = (await getIP()).replace(/\./g, "_");
+  const playerRef = ref(db, `players/${safeIP}`);
+
+  // Setze den Spieler in die DB
+  set(playerRef, "Moritz");
+
+  // Stelle sicher, dass er automatisch entfernt wird, wenn die Verbindung abbricht
+  onDisconnect(playerRef).remove();
+
   const sq = document.getElementById("square");
   function updateSquare() {
     const size = Math.min(window.innerWidth, window.innerHeight);

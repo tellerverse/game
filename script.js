@@ -31,6 +31,18 @@ onValue(color, snapshot => {
 //     .catch(err => console.error(err));
 
 // });
+onValue(ref(db, "players"), snapshot => {
+  const now = Date.now();
+  const players = snapshot.val() || {};
+  for (const key in players) {
+    if (now - (players[key].lastSeen || 0) > 15000) { // 15 Sekunden Inaktivität
+      remove(ref(db, `players/${key}`));
+    }
+  }
+});
+setInterval(async () => {
+  set(ref(db, `players/${await getIP()}/lastSeen`), Date.now());
+}, 5000); // alle 5 Sekunden
 
 async function getIP() {
   let ip = "unknown";
@@ -47,14 +59,12 @@ async function getIP() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  const safeIP = (await getIP()).replace(/\./g, "_");
-  const playerRef = ref(db, `players/${safeIP}`);
-
   // Setze den Spieler in die DB
-  set(playerRef, "Moritz");
+  set(ref(db, `players/${await getIP()}/lastSeen`), Date.now());
+  set(ref(db, `players/${await getIP()}/Name`), "Moritz");
 
   // Stelle sicher, dass er automatisch entfernt wird, wenn die Verbindung abbricht
-  onDisconnect(playerRef).remove();
+  onDisconnect(ref(db, `players/${await getIP()}`)).remove();
 
   const sq = document.getElementById("square");
   function updateSquare() {

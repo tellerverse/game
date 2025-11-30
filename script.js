@@ -16,14 +16,16 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const color = ref(db, "color");
 
-window.changeColor = (newColor) => set(color, newColor);
-
-onValue(color, snapshot => {
+onValue(ref(db, "color"), snapshot => {
   const color = snapshot.val() || "white";
   const sq = document.getElementById("square");
   if (sq) sq.style.background = color;
+});
+
+onValue(ref(db, "players/193_231_19_144/game"), snapshot => {
+  const sq = document.getElementById("square");
+  if (sq) sq.style.background = "red";
 });
 
 // window.addEventListener("beforeunload", async (event) => {
@@ -92,21 +94,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   const img = new TextureBlock("https://picsum.photos/100", 100);
   canvas.addSlot(img.makeSlot({ x: 450, y: 450 }));
-  // const btn23 = new ButtonQuiet("", 500, 500, 0, 0);
-  // btn23.addListener(() => set(color, "#ff0000"));
-  // canvas.addSlot(btn23.makeSlot({ x: 0, y: 0 }));
 
-  // const btn2 = new ButtonQuiet("", 250, 250, 0, 50);
-  // btn2.addListener(() => set(color, "#00ff00"));
-  // canvas.addSlot(btn2.makeSlot({ x: -250, y: -250 }));
-
-  // const btn = new ButtonQuiet("", 250, 250, 0, 50);
-  // btn.addListener(() => changeColor('#0000ff'));
-  // canvas.addSlot(btn.makeSlot({ x: 250, y: -250 }));
-
-  // const btn3 = new ButtonQuiet("", 250, 250, 0, 50);
-  // btn3.addListener(() => canvas.setVisibility(false));
-  // canvas.addSlot(btn3.makeSlot({ x: 250, y: 250 }));
   const games = [
     new TikTakToe(),
     new Sudoku(),

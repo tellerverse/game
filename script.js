@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js";
 import { getDatabase, onDisconnect, ref, onValue, set, push , get, remove } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
 import { Canvas, TextBlock, TextureBlock, ButtonQuiet } from './ui.js';
+import { TikTakToe, Sudoku, FindTheDifference, SchiffeVersenken} from "./game.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBfT4NxPtu-ocx5lDntpV_U5f__-dpSiS8",
@@ -32,7 +33,7 @@ onValue(color, snapshot => {
 
 // });
 
-async function getIP() {
+export async function getIP() {
   let ip = "unknown";
   try {
     const res = await fetch("https://api.ipify.org?format=json", { cache: "no-store" });
@@ -79,30 +80,42 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const canvas = new Canvas();
   const title = new TextBlock(`Hallo ${name}`, "white");
+  canvas.addSlot(title.makeSlot({ x: 0, y: -300}));
 
-  // canvas.addSlot(title.makeSlot({ x: 0, y: -300 }));
-  // const players = await get(ref(db, "players"));
-  // let i = 0;
-  // for (const IP in players.val() || {}) {
-  //   const player = players.val()[IP];
-  //   const playerName = new TextBlock(`${player.Name}`, "white");
-  //   canvas.addSlot(playerName.makeSlot({ x: 0, y: -250 + i * 20 }));
-  //   i++;
-  // }
-  const img = new TextureBlock("https://picsum.photos/300", 300);
-  canvas.addSlot(img.makeSlot({ x: 0, y: 0 }));
+  const players = await get(ref(db, "players"));
+  let i = 0;
+  for (const IP in players.val() || {}) {
+    const player = players.val()[IP];
+    const playerName = new ButtonQuiet(`${player.Name}`);
+    canvas.addSlot(playerName.makeSlot({ x: 0, y: -250 + i * 20 }));
+    i++;
+  }
+  const img = new TextureBlock("https://picsum.photos/100", 100);
+  canvas.addSlot(img.makeSlot({ x: 450, y: 450 }));
+  // const btn23 = new ButtonQuiet("", 500, 500, 0, 0);
+  // btn23.addListener(() => set(color, "#ff0000"));
+  // canvas.addSlot(btn23.makeSlot({ x: 0, y: 0 }));
 
-  const btn = new ButtonQuiet("blau");
-  btn.addListener(() => changeColor('#0000ff'));
-  canvas.addSlot(btn.makeSlot({ x: 0, y: 250 }));
+  // const btn2 = new ButtonQuiet("", 250, 250, 0, 50);
+  // btn2.addListener(() => set(color, "#00ff00"));
+  // canvas.addSlot(btn2.makeSlot({ x: -250, y: -250 }));
 
-  const btn2 = new ButtonQuiet("grün");
-  btn2.addListener(() => set(color, "#00ff00"));
-  canvas.addSlot(btn2.makeSlot({ x: 120, y: 250 }));
+  // const btn = new ButtonQuiet("", 250, 250, 0, 50);
+  // btn.addListener(() => changeColor('#0000ff'));
+  // canvas.addSlot(btn.makeSlot({ x: 250, y: -250 }));
 
-  const btn3 = new ButtonQuiet("red");
-  btn3.addListener(() => set(color, "#ff0000"));
-  canvas.addSlot(btn3.makeSlot({ x: 240, y: 250 }));
-
+  // const btn3 = new ButtonQuiet("", 250, 250, 0, 50);
+  // btn3.addListener(() => canvas.setVisibility(false));
+  // canvas.addSlot(btn3.makeSlot({ x: 250, y: 250 }));
+  const games = [
+    new TikTakToe(),
+    new Sudoku(),
+    new SchiffeVersenken(),
+    new FindTheDifference()
+  ]
+  for (i = 0; i < 4; i++) {
+    // if (games[i] != null) canvas.addSlot(games[i].load(i));
+    if (games[i] != null) canvas.slots = [...canvas.slots, ...games[i].load(i)];
+  }
   canvas.mount();
 });

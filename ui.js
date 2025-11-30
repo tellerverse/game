@@ -15,6 +15,11 @@ class Widget {
     makeSlot({ x=0, y=0, width="auto", height="auto", z=1 }) {
         return new CanvasSlot(this, { x, y, width, height, z });
     }
+
+    setVisibility(visible) {
+        const el = this.element;
+        el.style.display = visible ? "block" : "none";
+    }
 }
 
 
@@ -45,7 +50,8 @@ class CanvasSlot {
         el.style.position = "fixed";
         el.style.left = `calc(50% + ${sx}px)`;
         el.style.top  = `calc(50% + ${sy}px)`;
-        el.style.transform = "translate(-50%, -50%)";
+        const a = { x: el.dataset.alignX !== undefined ? parseFloat(el.dataset.alignX) : 0.5, y: el.dataset.alignY !== undefined ? parseFloat(el.dataset.alignY) : 0.5 };
+        el.style.transform = `translate(-${(a.x * 100)}%, -${(a.y * 100)}%)`;
         el.style.zIndex = this.props.z + 10;
 
         // --- Size scaling
@@ -91,20 +97,21 @@ export class Canvas {
     }
 
     mount() {
-        // for (const slot of this.slots) {
-        //     const el = slot.widget.render();
-        //     slot.apply();
-        //     document.body.appendChild(el);
-        // }
         for (const slot of this.slots) {
-          slot.apply();                       // apply erzeugt und stylt das Element
-          const el = slot.widget.element;     // nimm das Element, das im Widget gespeichert ist
-          document.body.appendChild(el);      // hänge genau dieses an
+          slot.apply();
+          const el = slot.widget.element;
+          document.body.appendChild(el);
         }
     }
 
     update() {
         for (const slot of this.slots) slot.apply();
+    }
+
+    setVisibility(visible) {
+        for (const slot of this.slots) {
+            slot.widget.setVisibility(visible);
+        }
     }
 }
 
@@ -114,20 +121,29 @@ export class Canvas {
 // =====================
 
 export class TextBlock extends Widget {
-    constructor(text="", color="white", fontSize=20) {
+    constructor(text="", color="white", fontSize=20, align="left", alignment={ x: 0.5, y: 0.5 }) {
         super();
         this.text = text;
         this.color = color;
         this.fontSize = fontSize;
+        this.align = align;
+        this.alignment = alignment;
     }
 
     render() {
         const el = super.render();
         el.textContent = this.text;
         el.style.color = this.color;
-        el.style.fontFamily = "sans-serif";
         el.dataset.baseFont = this.fontSize;
+        el.style.textAlign = this.align;
+        el.dataset.alignX = this.alignment.x;
+        el.dataset.alignY = this.alignment.y;
         return el;
+    }
+
+    setText(newText) {
+        this.text = newText;
+        if (this.element) this.element.textContent = newText;
     }
 }
 
@@ -154,25 +170,34 @@ export class TextureBlock extends Widget {
 }
 
 export class ButtonQuiet extends Widget {
-    constructor(text="", paddingY=10, paddingX=20, border=1, radius=5) {
+    constructor(text="", paddingY=10, paddingX=20, border=1, radius=5, fontSize=40, color="#ffffff") {
         super();
         this.text = text;
         this.basePaddingY = paddingY;
         this.basePaddingX = paddingX;
         this.baseBorder = border;
         this.baseRadius = radius;
+        this.baseFontSize = fontSize;
+        this.baseColor = color;
         this.listeners = []; // Array für Click-Funktionen
+    }
+
+    setText(text) {
+        this.text = text;
+        if (this.element) this.element.textContent = text;
     }
 
     render() {
         const el = super.render();
         el.textContent = this.text;
-        el.style.background = "#ffffff22";
-        el.style.border = "1px solid #ffffff55";
+        
+        el.style.background = `${this.baseColor}44`;
+        el.style.border = `1px solid ${this.baseColor}55`;
         el.style.cursor = "pointer";
         el.style.userSelect = "none";
 
         // Basiswerte für Scaling
+        el.dataset.baseFont = this.baseFontSize;
         el.dataset.basePaddingY = this.basePaddingY;
         el.dataset.basePaddingX = this.basePaddingX;
         el.dataset.baseBorder = this.baseBorder;

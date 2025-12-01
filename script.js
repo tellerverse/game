@@ -13,7 +13,12 @@ const firebaseConfig = {
   appId: "1:718552016078:web:3a50eb176071ad5b321c9f",
   measurementId: "G-L95ESZ482V"
 };
-
+const games = [
+  new TikTakToe(),
+  new Sudoku(),
+  new SchiffeVersenken(),
+  new FindTheDifference()
+];
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
@@ -23,10 +28,7 @@ onValue(ref(db, "color"), snapshot => {
   if (sq) sq.style.background = color;
 });
 
-onValue(ref(db, "players/193_231_19_144/game"), snapshot => {
-  const sq = document.getElementById("square");
-  if (sq) sq.style.background = "red";
-});
+
 
 // window.addEventListener("beforeunload", async (event) => {
 //   remove(ref(db, `players/${await getIP()}`))
@@ -53,24 +55,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   const IP = await getIP();
   const playerRef = ref(db, `players/${IP}`);
   const ipMapRef = ref(db, `ipMap/${IP}`);
-
-  // Spieler in die DB setzen
   onDisconnect(playerRef).remove();
-
-  // Name aus der ipMap holen
   const snap = await get(ipMapRef);
   let name = snap.val();
 
   if (!name) {
-    // Neuer Spieler: Name abfragen
     name = prompt("Bitte gib deinen Namen ein:") || "Gast";
-    set(ipMapRef, name); // in ipMap speichern
+    set(ipMapRef, name);
   }
-
-  // Name im Spieler-Eintrag speichern
   set(ref(db, `players/${IP}/Name`), name);
+  set(ref(db, `players/${IP}/game`), "none");
 
-  // UI-Setup wie bisher
   const sq = document.getElementById("square");
   function updateSquare() {
     const size = Math.min(window.innerWidth, window.innerHeight);
@@ -81,29 +76,39 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateSquare();
 
   const canvas = new Canvas();
-  const title = new TextBlock(`Hallo ${name}`, "white");
-  canvas.addSlot(title.makeSlot({ x: 0, y: -300}));
 
-  const players = await get(ref(db, "players"));
-  let i = 0;
-  for (const IP in players.val() || {}) {
-    const player = players.val()[IP];
-    const playerName = new ButtonQuiet(`${player.Name}`);
-    canvas.addSlot(playerName.makeSlot({ x: 0, y: -250 + i * 20 }));
-    i++;
-  }
-  const img = new TextureBlock("https://picsum.photos/100", 100);
-  canvas.addSlot(img.makeSlot({ x: 450, y: 450 }));
+  // const players = await get(ref(db, "players"));
+  // let i = 0;
+  // for (const IP in players.val() || {}) {
+  //   const player = players.val()[IP];
+  //   const playerName = new ButtonQuiet(`${player.Name}`);
+  //   canvas.addSlot(playerName.makeSlot({ x: 0, y: -250 + i * 20 }));
+  //   i++;
+  // }
+  // const img = new TextureBlock("https://picsum.photos/100", 100);
+  // canvas.addSlot(img.makeSlot({ x: 450, y: 450 }));
 
-  const games = [
-    new TikTakToe(),
-    new Sudoku(),
-    new SchiffeVersenken(),
-    new FindTheDifference()
-  ]
-  for (i = 0; i < 4; i++) {
+  
+  for (let i = 0; i < 4; i++) {
     // if (games[i] != null) canvas.addSlot(games[i].load(i));
     if (games[i] != null) canvas.slots = [...canvas.slots, ...games[i].load(i)];
   }
+  // let nameBtn = new ButtonQuiet(`Hallo ${name}`, 40, 60, 0, 50, 60, "#aaaaaa", false);
+  // canvas.addSlot(nameBtn.makeSlot({ x: 0, y: 0, z: 100 }));
   canvas.mount();
+
+  onValue(playerRef, snapshot => {
+    const data = snapshot.val();
+    if (!data || !data.game) return;
+
+    const gameNames = ["TikTakToe", "Sudoku", "Schiffe Versenken", "Find the Difference"];
+    const index = gameNames.indexOf(data.game);
+    if (index === -1) return;
+
+    const game = games[index];
+    if (game) {
+      game.test();
+    }
+  });
+
 });

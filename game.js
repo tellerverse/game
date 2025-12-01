@@ -35,16 +35,16 @@ class game {
     load(i) {
         const pos = { x: i < 2 ? -250 : 250, y: [1, 3].includes(i)? -250 : 250 }
         this.btn.addListener(() => this.register());
-        return [this.btn.makeSlot(pos), this.caption.makeSlot({ x: pos.x, y: pos.y - 200 }), ...this.playerNames.map(p => p.makeSlot({ x: pos.x, y: pos.y + 200 - (this.playerNames.indexOf(p) * 70) }))];
+        return [this.caption.makeSlot({ x: pos.x, y: pos.y - 200 }), ...this.playerNames.map(p => p.makeSlot({ x: pos.x, y: pos.y + 200 - (this.playerNames.indexOf(p) * 70) })), this.btn.makeSlot(pos)];
     }
 
     async register() {
-        const snapshot = await get(ref(db, "players"));
-
         const ip = await getIP();
-        const Name = snapshot.val()[ip]?.Name || "Gast";
+        set(ref(db, `players/${ip}/game`), this.caption.text)
+    }
 
-        this.playerNames[0].setText(Name);
+    test() {
+        this.caption.setText("Test");
     }
 }
 
@@ -87,10 +87,11 @@ export class FindTheDifference extends game {
     constructor() {
         super();
         this.caption.text = "Find the Difference";
+        this.caption2 = new TextBlock("hey", "white", 80, "center", { x: 0.5, y: 0.0 });
 
     }
 
     load(i) {
-        return super.load(i);
+        return [...super.load(i), this.caption2.makeSlot({ x: 250, y: -150 })];
     }
 }

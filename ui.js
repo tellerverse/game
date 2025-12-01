@@ -170,7 +170,7 @@ export class TextureBlock extends Widget {
 }
 
 export class ButtonQuiet extends Widget {
-    constructor(text="", paddingY=10, paddingX=20, border=1, radius=5, fontSize=40, color="#ffffff") {
+    constructor(text="", paddingY=10, paddingX=20, border=1, radius=5, fontSize=40, color="#ffffff", transparent=true) {
         super();
         this.text = text;
         this.basePaddingY = paddingY;
@@ -179,6 +179,7 @@ export class ButtonQuiet extends Widget {
         this.baseRadius = radius;
         this.baseFontSize = fontSize;
         this.baseColor = color;
+        this.transparent = transparent;
         this.listeners = []; // Array für Click-Funktionen
     }
 
@@ -191,8 +192,8 @@ export class ButtonQuiet extends Widget {
         const el = super.render();
         el.textContent = this.text;
         
-        el.style.background = `${this.baseColor}44`;
-        el.style.border = `1px solid ${this.baseColor}55`;
+        el.style.background = `${this.baseColor}${this.transparent ? "44" : "ff"}`;
+        el.style.border = `1px solid ${this.baseColor}${this.transparent ? "44" : "ff"}`;
         el.style.cursor = "pointer";
         el.style.userSelect = "none";
 

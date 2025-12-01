@@ -27,6 +27,7 @@ class game {
         this.btn = new ButtonQuiet("", 220, 220, 20, 50);
         this.caption = new TextBlock("", "white", 80, "center", { x: 0.5, y: 0.0 });
         this.playerNames = [new TextBlock("", "#ffaaaa", 80, "center", { x: 0.5, y: 1.0 }), new TextBlock("", "#ffaaaa", 80, "center", { x: 0.5, y: 1.0 })];
+        this.players = [];
     }
 
     start() {
@@ -41,6 +42,7 @@ class game {
 
     async tryRegister() {
         const ip = await getIP();
+        const snap = await get(ref(db, `players/${ip}/game`));
         set(ref(db, `players/${ip}/game`), this.caption.text)
     }
 
@@ -48,7 +50,8 @@ class game {
         const ip = await getIP();
         const snap = await get(ref(db, `players/${ip}/Name`));
         const name = snap.val();
-        this.playerNames.forEach(p => p.setText(name));
+        this.playerNames[this.players.length].setText(name);
+        this.players.push({ ip, name });
     }
 }
 
@@ -91,8 +94,7 @@ export class FindTheDifference extends game {
     constructor() {
         super();
         this.caption.text = "Find the Difference";
-        this.caption2 = new TextBlock("hey", "white", 80, "center", { x: 0.5, y: 0.0 });
-
+        this.caption2 = new TextureBlock("https://picsum.photos/200", 200); //new TextBlock("hey", "white", 80, "center", { x: 0.5, y: 0.0 });
     }
 
     load(i) {

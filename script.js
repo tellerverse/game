@@ -98,6 +98,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   canvas.mount();
 
   onValue(ref(db, "players"), snapshot => {
+    for (const game of games) {
+      game.playerNames.forEach(p => p.setText(""));
+      game.players = [];
+    }
     for (const playerIP in snapshot.val() || {}) {
       const data = snapshot.val()[playerIP];
       if (!data || !data.game) return;

@@ -97,17 +97,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   // canvas.addSlot(nameBtn.makeSlot({ x: 0, y: 0, z: 100 }));
   canvas.mount();
 
-  onValue(playerRef, snapshot => {
-    const data = snapshot.val();
-    if (!data || !data.game) return;
+  onValue(ref(db, "players"), snapshot => {
+    for (const playerIP in snapshot.val() || {}) {
+      const data = snapshot.val()[playerIP];
+      if (!data || !data.game) return;
 
-    const gameNames = ["TikTakToe", "Sudoku", "Schiffe Versenken", "Find the Difference"];
-    const index = gameNames.indexOf(data.game);
-    if (index === -1) return;
+      const gameNames = ["TikTakToe", "Sudoku", "Schiffe Versenken", "Find the Difference"];
+      const index = gameNames.indexOf(data.game);
+      if (index === -1) return;
 
-    const game = games[index];
-    if (game) {
-      game.test();
+      const game = games[index];
+      if (game) {
+        game.test();
+      }
     }
   });
 

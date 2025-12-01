@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // canvas.addSlot(nameBtn.makeSlot({ x: 0, y: 0, z: 100 }));
   canvas.mount();
 
-  onValue(ref(db, "players"), snapshot => {
+  onValue(ref(db, "players"), async snapshot => {
     for (const game of games) {
       game.playerNames.forEach(p => p.setText(""));
       game.players = [];
@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const game = games[index];
       if (game) {
-        game.register();
+        game.register(await getIP());
       }
     }
   });

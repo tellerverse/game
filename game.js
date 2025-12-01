@@ -46,8 +46,7 @@ class game {
         set(ref(db, `players/${ip}/game`), this.caption.text)
     }
 
-    async register() {
-        const ip = await getIP();
+    async register(ip) {
         const snap = await get(ref(db, `players/${ip}/Name`));
         const name = snap.val();
         this.playerNames[this.players.length].setText(name);

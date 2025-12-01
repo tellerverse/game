@@ -22,6 +22,7 @@ const db = getDatabase(app);
 
 class game {
     constructor() {
+        this.playerAmount = 2;
         this.element = null;
         this.btn = new ButtonQuiet("", 220, 220, 20, 50);
         this.caption = new TextBlock("", "white", 80, "center", { x: 0.5, y: 0.0 });
@@ -34,17 +35,20 @@ class game {
 
     load(i) {
         const pos = { x: i < 2 ? -250 : 250, y: [1, 3].includes(i)? -250 : 250 }
-        this.btn.addListener(() => this.register());
+        this.btn.addListener(() => this.tryRegister());
         return [this.caption.makeSlot({ x: pos.x, y: pos.y - 200 }), ...this.playerNames.map(p => p.makeSlot({ x: pos.x, y: pos.y + 200 - (this.playerNames.indexOf(p) * 70) })), this.btn.makeSlot(pos)];
     }
 
-    async register() {
+    async tryRegister() {
         const ip = await getIP();
         set(ref(db, `players/${ip}/game`), this.caption.text)
     }
 
-    test() {
-        this.caption.setText("Test");
+    async register() {
+        const ip = await getIP();
+        const snap = await get(ref(db, `players/${ip}/Name`));
+        const name = snap.val();
+        this.playerNames.forEach(p => p.setText(name));
     }
 }
 

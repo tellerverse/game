@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const game = games[index];
       if (game) {
-        game.test();
+        game.register();
       }
     }
   });

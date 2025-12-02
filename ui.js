@@ -207,7 +207,8 @@ export class ButtonQuiet extends Widget {
     render() {
         const el = super.render();
         el.textContent = this.text;
-        
+
+        el.style.transition = "background 1.2s, border-color 1.2s, color 1.2s, opacity 0.5s";
         el.style.background = `${this.baseColor}${this.transparent ? "44" : "ff"}`;
         el.style.border = `1px solid ${this.baseColor}${this.transparent ? "44" : "ff"}`;
         el.style.cursor = "pointer";

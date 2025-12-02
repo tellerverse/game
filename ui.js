@@ -185,6 +185,41 @@ export class TextureBlock extends Widget {
     }
 }
 
+export class ColorBlock extends Widget {
+    constructor(color, size=200, radius=10) {
+        super();
+        this.color = color;
+        this.size = size;
+        this.radius = radius;
+    }
+
+    // render() {
+    //     const el = super.render();
+    //     el.style.backgroundImage = `url(${this.image})`;
+    //     el.style.backgroundSize = "cover";
+    //     el.style.backgroundPosition = "center";
+    //     el.style.width = this.size + "px";
+    //     el.style.height = this.size + "px";
+    //     el.style.borderRadius = this.radius + "px";
+    //     el.dataset.baseSize = this.size;
+    //     el.dataset.baseRadius = this.radius;
+    //     return el;
+    // }
+
+    render() {
+        const el = super.render();
+        el.style.backgroundColor = this.color;
+        el.style.width = this.size + "px";
+        el.style.height = this.size + "px";
+        el.style.borderRadius = this.radius + "px";
+
+        el.dataset.baseSize = this.size;
+        el.dataset.baseRadius = this.radius;
+
+        return el;
+    }
+}
+
 export class ButtonQuiet extends Widget {
     constructor(text="", paddingY=10, paddingX=20, border=1, radius=5, fontSize=40, color="#ffffff", transparent=true) {
         super();

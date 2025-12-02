@@ -80,6 +80,7 @@ class game {
 export class TikTakToe extends game {
     constructor() {
         super();
+        this.playerAmount = 1;
         this.name = "TikTakToe";
         this.imagedata = {image: "/Assets/tiktaktoe.png", size: 30};
         this.gameUI = { Can: new Canvas() };
@@ -90,8 +91,8 @@ export class TikTakToe extends game {
     }
 
     initUI() {
-        this.gameUI.board = new TextBlock().makeSlot(("hallo", "white", 80, "center", { x: 0.5, y: 0.0 }));
-        this.gameUI.Can.addSlot(this.gameUI.board);
+        this.gameUI.board = new TextBlock("hallo", "white", 80, "center", { x: 0.5, y: 0.5 });
+        this.gameUI.Can.addSlot(this.gameUI.board.makeSlot({ x: 0, y: 0 }));
         this.gameUI.Can.mount();
         
     }
@@ -100,7 +101,6 @@ export class TikTakToe extends game {
 export class Sudoku extends game {
     constructor() {
         super();
-        this.playerAmount = 1;
         this.name = "Sudoku";
         this.imagedata = {image: "/Assets/sudoku.png", size: 30};
     }

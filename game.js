@@ -62,7 +62,8 @@ class game {
 
     removePlayer(ip) {
         delete this.players[ip];
-        this.playerNames[Object.keys(this.players).length].setText("");
+        const remaining = Object.values(this.players);
+        this.playerNames.forEach((block, i) => { block.setText(remaining[i] ?? "");});
     }
 }
 

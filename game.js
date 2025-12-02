@@ -4,7 +4,7 @@
 import { Canvas, TextBlock, TextureBlock, ButtonQuiet } from './ui.js';
 import { getDatabase, onDisconnect, ref, onValue, set, push , get, remove } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js";
-import { getIP } from './script.js';
+import { getIP, sleep, canvas } from './script.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBfT4NxPtu-ocx5lDntpV_U5f__-dpSiS8",
@@ -31,11 +31,20 @@ class game {
         this.imagedata = {image: "https://picsum.photos/60", size: 20};
         this.playerNames = [new TextBlock("", "#ffaaaa", 80, "center", { x: 0.5, y: 1.0 }), new TextBlock("", "#ffaaaa", 80, "center", { x: 0.5, y: 1.0 })];
         this.players = {};
+        this.gameUI = new Canvas();
+    }
+
+    initUI() {
+        console.log("No UI initialized for this game.");
+        return [];
     }
 
     async start() {
         set(ref(db, `players/${await getIP()}/gameState`), "playing");
         this.btn.disable();
+        await sleep(3000);
+        canvas.setVisibility(false);
+        this.initUI();
     }
 
     load(i) {
@@ -73,10 +82,18 @@ export class TikTakToe extends game {
         super();
         this.name = "TikTakToe";
         this.imagedata = {image: "/Assets/tiktaktoe.png", size: 30};
+        this.gameUI = { Can: new Canvas() };
     }
 
     load(i) {
         return super.load(i);
+    }
+
+    initUI() {
+        this.gameUI.board = new TextBlock().makeSlot(("hallo", "white", 80, "center", { x: 0.5, y: 0.0 }));
+        this.gameUI.Can.addSlot(this.gameUI.board);
+        this.gameUI.Can.mount();
+        
     }
 }
 

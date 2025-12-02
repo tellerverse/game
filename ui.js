@@ -236,6 +236,7 @@ export class ButtonQuiet extends Widget {
             this.element.style.pointerEvents = "none";
             this.element.style.opacity = "0.5";
             this.element.style.cursor = "default";
+            this.element.style.background = "#888822";
         }
     }
 }

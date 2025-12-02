@@ -1,7 +1,7 @@
 // // =====================
 // //   CORE GAME SYSTEM
 // // =====================
-import { Canvas, TextBlock, TextureBlock, ButtonQuiet } from './ui.js';
+import { Canvas, TextBlock, TextureBlock, ColorBlock, ButtonQuiet } from './ui.js';
 import { getDatabase, onDisconnect, ref, onValue, set, push , get, remove } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js";
 import { getIP, sleep, canvas } from './script.js';
@@ -42,7 +42,7 @@ class game {
     async start() {
         set(ref(db, `players/${await getIP()}/gameState`), "playing");
         this.btn.disable();
-        await sleep(3000);
+        // await sleep(3000);
         canvas.setVisibility(false);
         this.initUI();
     }
@@ -91,10 +91,33 @@ export class TikTakToe extends game {
     }
 
     initUI() {
-        this.gameUI.board = new TextBlock("hallo", "white", 80, "center", { x: 0.5, y: 0.5 });
-        this.gameUI.Can.addSlot(this.gameUI.board.makeSlot({ x: 0, y: 0 }));
+        this.gameUI.text = new TextBlock("hallo", "white", 80, "center", { x: 0.5, y: 0.5 });
+        this.gameUI.board = new ColorBlock("red", 80, 10);
+        this.gameUI.blocks = Array.from({ length: 9 }, (_, i) => {
+            // const y = i - 1;
+            return {image: new TextureBlock("https://picsum.photos/240", 240, 0), button: new ButtonQuiet("", 240, 240, 0, 0)};
+        });
+        this.gameUI.Can.slots = [
+            this.gameUI.board.makeSlot({ x: 0, y: 0 }),
+            ...Array.from({ length: 9 }, (_, i) => {
+                const pos = { x: -250 + (i % 3) * 250, y: -250 + Math.floor(i / 3) * 250 };
+                const res = [this.gameUI.blocks[i].button.makeSlot(pos), this.gameUI.blocks[i].image.makeSlot(pos)]
+                this.gameUI.blocks[i].image.image = Object.keys(this.players).length % 2 === 1 ? "/Assets/tower.png" : "/Assets/horse.png";
+
+                return res;
+                
+            }).flat()
+        ];
         this.gameUI.Can.mount();
-        
+        for (const block in this.gameUI.blocks) {
+            this.gameUI.blocks[block].image.setVisibility(false);
+            // this.gameUI.blocks[block].button.setVisibility(false);
+
+            this.gameUI.blocks[block].button.addListener(() => {
+                console.log("clicked block " + block);
+                this.gameUI.blocks[block].image.setVisibility(true);
+            });
+        }
     }
 }
 

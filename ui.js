@@ -18,7 +18,7 @@ class Widget {
 
     setVisibility(visible) {
         const el = this.element;
-        el.style.display = visible ? "block" : "none";
+        if (el.style.display !== undefined) el.style.display = visible ? "block" : "none";
     }
 }
 
@@ -90,10 +90,6 @@ export class Canvas {
     constructor() {
         this.slots = [];
         window.addEventListener("resize", () => this.update());
-    }
-
-    addSlot(slot) {
-        this.slots.push(slot);
     }
 
     mount() {
@@ -263,7 +259,11 @@ export class ButtonQuiet extends Widget {
     }
 
     addListener(fn) {
-        if (typeof fn === "function") this.listeners.push(fn);
+        if (typeof fn === "function") {
+            this.listeners.push(fn);
+            if (this.element)
+                this.element.addEventListener("click", fn);
+        }
     }
 
     disable() {

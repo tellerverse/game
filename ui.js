@@ -155,16 +155,32 @@ export class TextureBlock extends Widget {
         this.radius = radius;
     }
 
+    // render() {
+    //     const el = super.render();
+    //     el.style.backgroundImage = `url(${this.image})`;
+    //     el.style.backgroundSize = "cover";
+    //     el.style.backgroundPosition = "center";
+    //     el.style.width = this.size + "px";
+    //     el.style.height = this.size + "px";
+    //     el.style.borderRadius = this.radius + "px";
+    //     el.dataset.baseSize = this.size;
+    //     el.dataset.baseRadius = this.radius;
+    //     return el;
+    // }
+
     render() {
         const el = super.render();
         el.style.backgroundImage = `url(${this.image})`;
-        el.style.backgroundSize = "cover";
+        el.style.backgroundSize = "contain"; 
+        el.style.backgroundRepeat = "no-repeat";
         el.style.backgroundPosition = "center";
         el.style.width = this.size + "px";
         el.style.height = this.size + "px";
         el.style.borderRadius = this.radius + "px";
+
         el.dataset.baseSize = this.size;
         el.dataset.baseRadius = this.radius;
+
         return el;
     }
 }
@@ -212,5 +228,13 @@ export class ButtonQuiet extends Widget {
 
     addListener(fn) {
         if (typeof fn === "function") this.listeners.push(fn);
+    }
+
+    disable() {
+        if (this.element) {
+            this.element.style.pointerEvents = "none";
+            this.element.style.opacity = "0.5";
+            this.element.style.cursor = "default";
+        }
     }
 }

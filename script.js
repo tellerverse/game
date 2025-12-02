@@ -63,8 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     name = prompt("Bitte gib deinen Namen ein:") || "Gast";
     set(ipMapRef, name);
   }
-  set(ref(db, `players/${IP}/name`), name);
-  set(ref(db, `players/${IP}/game`), "none");
+  set(ref(db, `players/${IP}`), { name: name, game: "none", gameState: "none" });
 
   const sq = document.getElementById("square");
   function updateSquare() {

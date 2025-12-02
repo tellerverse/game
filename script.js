@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     name = prompt("Bitte gib deinen Namen ein:") || "Gast";
     set(ipMapRef, name);
   }
-  set(ref(db, `players/${IP}/Name`), name);
+  set(ref(db, `players/${IP}/name`), name);
   set(ref(db, `players/${IP}/game`), "none");
 
   const sq = document.getElementById("square");
@@ -97,24 +97,50 @@ document.addEventListener('DOMContentLoaded', async () => {
   // canvas.addSlot(nameBtn.makeSlot({ x: 0, y: 0, z: 100 }));
   canvas.mount();
 
-  onValue(ref(db, "players"), async snapshot => {
-    for (const game of games) {
-      game.playerNames.forEach(p => p.setText(""));
-      game.players = [];
-    }
-    for (const playerIP in snapshot.val() || {}) {
-      const data = snapshot.val()[playerIP];
-      if (!data || !data.game) return;
+  let currentPlayers = {}; // Cache: { ip: {name, game} }
 
-      const gameNames = ["TikTakToe", "Sudoku", "Schiffe Versenken", "Find the Difference"];
-      const index = gameNames.indexOf(data.game);
-      if (index === -1) return;
+  onValue(ref(db, "players"), snapshot => {
+      const newPlayers = snapshot.val() || {};
+      console.log("players updated");
+      // Diff: hinzugekommen
+      for (const ip in newPlayers) {
 
-      const game = games[index];
-      if (game) {
-        game.register(await getIP());
+        if (!currentPlayers[ip]) {
+              handlePlayerAdded(ip, newPlayers[ip]);
+              continue;
+          }
+          if (currentPlayers[ip].game !== newPlayers[ip].game) {
+              handlePlayerMoved(ip, currentPlayers[ip], newPlayers[ip]);
+          }
       }
-    }
+
+      // Diff: entfernt
+      for (const ip in currentPlayers) {
+          if (!newPlayers[ip]) {
+              handlePlayerRemoved(ip, currentPlayers[ip]);
+          }
+      }
+
+      currentPlayers = newPlayers;
   });
+  
+  function handlePlayerAdded(ip, data) {
+      const game = games.find(g => g.name === data.game);
+      if (game) game.addPlayer(ip, data.name); 
+  }
+
+  function handlePlayerMoved(ip, oldData, newData) {
+      const oldGame = games.find(g => g.name === oldData.game);
+      const newGame = games.find(g => g.name === newData.game);
+
+      if (oldGame) oldGame.removePlayer(ip);
+      if (newGame) newGame.addPlayer(ip, newData.name);
+  }
+
+  function handlePlayerRemoved(ip, data) {
+      const game = games.find(g => g.name === data.game);
+      if (game) game.removePlayer(ip);
+  }
+
 
 });

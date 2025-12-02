@@ -22,12 +22,13 @@ const db = getDatabase(app);
 
 class game {
     constructor() {
+        this.name = "Generic Game";
         this.playerAmount = 2;
         this.element = null;
         this.btn = new ButtonQuiet("", 220, 220, 20, 50);
         this.caption = new TextBlock("", "white", 80, "center", { x: 0.5, y: 0.0 });
         this.playerNames = [new TextBlock("", "#ffaaaa", 80, "center", { x: 0.5, y: 1.0 }), new TextBlock("", "#ffaaaa", 80, "center", { x: 0.5, y: 1.0 })];
-        this.players = [];
+        this.players = {};
     }
 
     start() {
@@ -37,6 +38,7 @@ class game {
     load(i) {
         const pos = { x: i < 2 ? -250 : 250, y: [1, 3].includes(i)? -250 : 250 }
         this.btn.addListener(() => this.tryRegister());
+        this.caption.setText(this.name);
         return [this.caption.makeSlot({ x: pos.x, y: pos.y - 200 }), ...this.playerNames.map(p => p.makeSlot({ x: pos.x, y: pos.y + 200 - (this.playerNames.indexOf(p) * 70) })), this.btn.makeSlot(pos)];
     }
 
@@ -46,18 +48,28 @@ class game {
         set(ref(db, `players/${ip}/game`), this.caption.text)
     }
 
-    async register(ip) {
-        const snap = await get(ref(db, `players/${ip}/Name`));
-        const name = snap.val();
-        this.playerNames[this.players.length].setText(name);
-        this.players.push({ ip, name });
+    // async register(ip) {
+    //     const snap = await get(ref(db, `players/${ip}/Name`));
+    //     const name = snap.val();
+    //     this.playerNames[this.players.length].setText(name);
+    //     this.players.push({ ip, name });
+    // }
+
+    addPlayer(ip, name) {
+        this.players[ip] = name;
+        this.playerNames[Object.keys(this.players).length - 1].setText(name);
+    }
+
+    removePlayer(ip) {
+        delete this.players[ip];
+        this.playerNames[Object.keys(this.players).length].setText("");
     }
 }
 
 export class TikTakToe extends game {
     constructor() {
         super();
-        this.caption.text = "TikTakToe";
+        this.name = "TikTakToe";
     }
 
     load(i) {
@@ -68,7 +80,7 @@ export class TikTakToe extends game {
 export class Sudoku extends game {
     constructor() {
         super();
-        this.caption.text = "Sudoku";
+        this.name = "Sudoku";
 
     }
 
@@ -80,7 +92,7 @@ export class Sudoku extends game {
 export class SchiffeVersenken extends game {
     constructor() {
         super();
-        this.caption.text = "Schiffe Versenken";
+        this.name = "Schiffe Versenken";
 
     }
 
@@ -92,7 +104,7 @@ export class SchiffeVersenken extends game {
 export class FindTheDifference extends game {
     constructor() {
         super();
-        this.caption.text = "Find the Difference";
+        this.name = "Find the Difference";
         this.caption2 = new TextureBlock("https://picsum.photos/200", 200); //new TextBlock("hey", "white", 80, "center", { x: 0.5, y: 0.0 });
     }
 

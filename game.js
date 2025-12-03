@@ -80,7 +80,7 @@ class game {
 export class TikTakToe extends game {
     constructor() {
         super();
-        this.playerAmount = 1;
+        this.playerAmount = 2;
         this.name = "TikTakToe";
         this.imagedata = {image: "/Assets/tiktaktoe.png", size: 30};
         this.gameUI = { Can: new Canvas() };
@@ -95,7 +95,7 @@ export class TikTakToe extends game {
         this.gameUI.board = new ColorBlock("red", 80, 10);
         this.gameUI.blocks = Array.from({ length: 9 }, (_, i) => {
             // const y = i - 1;
-            return {image: new TextureBlock("https://picsum.photos/240", 240, 0), button: new ButtonQuiet("", 240, 240, 0, 0)};
+            return {image: new TextureBlock("https://picsum.photos/120", 120, 0), button: new ButtonQuiet("", 120, 120, 0, 0)};
         });
         this.gameUI.Can.slots = [
             this.gameUI.board.makeSlot({ x: 0, y: 0 }),

@@ -84,79 +84,118 @@ export class TikTakToe extends game {
         const path = ref(db, `games/${this.name}`);
         const snap = await get(path);
 
+        // Spielfeld initialisieren
         if (!snap.exists()) {
-            await set(path, "000000000");
+            await set(path, {
+                board: "000000000",
+                turn: "X",     // X beginnt
+                players: {}    // IPs werden später eingetragen
+            });
         }
 
         super.start();
     }
 
+    // Spieler X/O zuweisen
+    addPlayer(ip, name) {
+        super.addPlayer(ip, name);
+
+        const keys = Object.keys(this.players);
+        const symbol = keys.length === 1 ? "X" : "O";
+
+        set(ref(db, `games/${this.name}/players/${symbol}`), ip);
+    }
 
     initUI() {
-        this.gameUI.text = new TextBlock("hallo", "white", 80, "center", { x: 0.5, y: 0.5 });
         this.gameUI.board = new ColorBlock("red", 80, 10);
-        this.gameUI.blocks = Array.from({ length: 9 }, (_, i) => {
-            // const y = i - 1;
-            return {image: new TextureBlock("Assets/tower.png", 120, 0), button: new ButtonQuiet("", 120, 120, 0, 0)};
+        this.gameUI.blocks = Array.from({ length: 9 }, () => {
+            return {
+                image: new TextureBlock("Assets/tower.png", 120, 0),
+                button: new ButtonQuiet("", 120, 120, 0, 0)
+            };
         });
+
         this.gameUI.Can.slots = [
             this.gameUI.board.makeSlot({ x: 0, y: 0 }),
             ...Array.from({ length: 9 }, (_, i) => {
                 const pos = { x: -250 + (i % 3) * 250, y: -250 + Math.floor(i / 3) * 250 };
-                const res = [this.gameUI.blocks[i].button.makeSlot(pos), this.gameUI.blocks[i].image.makeSlot(pos)]
-                // this.gameUI.blocks[i].image.image = Object.keys(this.players).length % 2 === 1 ? "Assets/tower.png" : "Assets/horse.png";
-
-                return res;
-                
+                return [
+                    this.gameUI.blocks[i].button.makeSlot(pos),
+                    this.gameUI.blocks[i].image.makeSlot(pos)
+                ];
             }).flat()
         ];
+
         this.gameUI.Can.mount();
+
+        // Buttons konfigurieren
         this.gameUI.blocks.forEach((blockObj, index) => {
+
             blockObj.image.setVisibility(false);
 
             blockObj.button.addListener(async () => {
-                console.log("clicked block " + index);
+                const ip = await getIP();
 
-                // Board holen
                 const snap = await get(ref(db, `games/${this.name}`));
-                let board = snap.val();
+                const data = snap.val();
 
-                // schon belegt?
+                const board = data.board;
+                const turn = data.turn;
+                const players = data.players;
+
+                // ermitteln, ob du X oder O bist
+                let mySymbol = null;
+                if (players.X === ip) mySymbol = "X";
+                if (players.O === ip) mySymbol = "O";
+
+                // Sicherheitsabbruch – du bist nicht im game
+                if (!mySymbol) return;
+
+                // --- WICHTIG: Nicht dein Zug → blocken ---
+                if (turn !== mySymbol) return;
+
+                // Feld belegt?
                 if (board[index] !== "0") return;
 
-                // Spieler bestimmen
-                const turn = board.split("").filter(x => x !== "0").length;
-                const symbol = turn % 2 === 0 ? "X" : "O";
-
                 // Board aktualisieren
-                board = 
+                const newBoard =
                     board.substring(0, index) +
-                    symbol +
+                    mySymbol +
                     board.substring(index + 1);
 
+                const nextTurn = mySymbol === "X" ? "O" : "X";
+
                 // Firebase updaten
-                await set(ref(db, `games/${this.name}`), board);
+                await set(ref(db, `games/${this.name}`), {
+                    board: newBoard,
+                    turn: nextTurn,
+                    players
+                });
             });
         });
 
-
+        // UI updaten bei Änderungen
         onValue(ref(db, `games/${this.name}`), snapshot => {
-            const board = snapshot.val();
-            if (!board) return;
+            const data = snapshot.val();
+            if (!data) return;
+
+            const board = data.board;
 
             for (let i = 0; i < 9; i++) {
                 const symbol = board[i];
+                const img = this.gameUI.blocks[i].image;
+
                 if (symbol === "0") {
-                    this.gameUI.blocks[i].image.setVisibility(false);
+                    img.setVisibility(false);
                 } else {
-                    this.gameUI.blocks[i].image.setVisibility(true);
-                    this.gameUI.blocks[i].image.image =
-                        symbol === "X" ? "Assets/tower.png" : "Assets/horse.png";
+                    img.setVisibility(true);
+                    img.image = symbol === "X" ? "Assets/tower.png" : "Assets/horse.png";
                 }
             }
         });
     }
 }
+
 
 export class Sudoku extends game {
     constructor() {

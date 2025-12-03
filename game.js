@@ -82,7 +82,7 @@ export class TikTakToe extends game {
         super();
         this.playerAmount = 2;
         this.name = "TikTakToe";
-        this.imagedata = {image: "/Assets/tiktaktoe.png", size: 30};
+        this.imagedata = {image: "Assets/tiktaktoe.png", size: 30};
         this.gameUI = { Can: new Canvas() };
     }
 
@@ -102,7 +102,7 @@ export class TikTakToe extends game {
             ...Array.from({ length: 9 }, (_, i) => {
                 const pos = { x: -250 + (i % 3) * 250, y: -250 + Math.floor(i / 3) * 250 };
                 const res = [this.gameUI.blocks[i].button.makeSlot(pos), this.gameUI.blocks[i].image.makeSlot(pos)]
-                this.gameUI.blocks[i].image.image = Object.keys(this.players).length % 2 === 1 ? "/Assets/tower.png" : "/Assets/horse.png";
+                this.gameUI.blocks[i].image.image = Object.keys(this.players).length % 2 === 1 ? "Assets/tower.png" : "Assets/horse.png";
 
                 return res;
                 
@@ -125,7 +125,7 @@ export class Sudoku extends game {
     constructor() {
         super();
         this.name = "Sudoku";
-        this.imagedata = {image: "/Assets/sudoku.png", size: 30};
+        this.imagedata = {image: "Assets/sudoku.png", size: 30};
     }
 
     load(i) {
@@ -137,7 +137,7 @@ export class SchiffeVersenken extends game {
     constructor() {
         super();
         this.name = "Schiffe Versenken";
-        this.imagedata = {image: "/Assets/ship.png", size: 60};
+        this.imagedata = {image: "Assets/ship.png", size: 60};
     }
 
     load(i) {
@@ -149,7 +149,7 @@ export class FindTheDifference extends game {
     constructor() {
         super();
         this.name = "Find the Difference";
-        this.imagedata = {image: "/Assets/search.png", size: 30};
+        this.imagedata = {image: "Assets/search.png", size: 30};
     }
 
     load(i) {

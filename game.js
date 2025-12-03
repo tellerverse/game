@@ -111,34 +111,50 @@ export class TikTakToe extends game {
             }).flat()
         ];
         this.gameUI.Can.mount();
-        for (const block in this.gameUI.blocks) {
-            this.gameUI.blocks[block].image.setVisibility(false);
-            // this.gameUI.blocks[block].button.setVisibility(false);
+        this.gameUI.blocks.forEach((blockObj, index) => {
+            blockObj.image.setVisibility(false);
 
-            this.gameUI.blocks[block].button.addListener(async () => {
-                console.log("clicked block " + block);
-                this.gameUI.blocks[block].image.setVisibility(true);
-                this.new = await get(ref(db, `games/${this.name}`));
-                this.new = board.substring(0, block) 
-                + (board.split("").filter(x => x !== "0").length % 2 === 0 ? "X" : "O")
-                + board.substring(block + 1);
+            blockObj.button.addListener(async () => {
+                console.log("clicked block " + index);
 
-                set(ref(db, `games/${this.name}`), this.new);
+                // Board holen
+                const snap = await get(ref(db, `games/${this.name}`));
+                let board = snap.val();
+
+                // schon belegt?
+                if (board[index] !== "0") return;
+
+                // Spieler bestimmen
+                const turn = board.split("").filter(x => x !== "0").length;
+                const symbol = turn % 2 === 0 ? "X" : "O";
+
+                // Board aktualisieren
+                board = 
+                    board.substring(0, index) +
+                    symbol +
+                    board.substring(index + 1);
+
+                // Firebase updaten
+                await set(ref(db, `games/${this.name}`), board);
             });
-        }
+        });
+
 
         onValue(ref(db, `games/${this.name}`), snapshot => {
             const board = snapshot.val();
-            if (!board) return; // wichtig
+            if (!board) return;
 
-            for (let i = 0; i < board.length; i++) {
-                if (board[i] !== "0") {
+            for (let i = 0; i < 9; i++) {
+                const symbol = board[i];
+                if (symbol === "0") {
+                    this.gameUI.blocks[i].image.setVisibility(false);
+                } else {
                     this.gameUI.blocks[i].image.setVisibility(true);
-                    this.gameUI.blocks[i].image.image = board[i] === "X" ? "Assets/tower.png" : "Assets/horse.png";
+                    this.gameUI.blocks[i].image.image =
+                        symbol === "X" ? "Assets/tower.png" : "Assets/horse.png";
                 }
             }
         });
-
     }
 }
 

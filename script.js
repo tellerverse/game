@@ -2,17 +2,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.0/firebas
 import { getDatabase, onDisconnect, ref, onValue, set, push , get, remove } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
 import { Canvas, TextBlock, TextureBlock, ButtonQuiet } from './ui.js';
 import { TikTakToe, Sudoku, FindTheDifference, SchiffeVersenken} from "./game.js";
+import { firebaseConfig } from './firebase.js';
 
-export const firebaseConfig = {
-  apiKey: "AIzaSyBfT4NxPtu-ocx5lDntpV_U5f__-dpSiS8",
-  authDomain: "gamevonwebsite.firebaseapp.com",
-  databaseURL: "https://gamevonwebsite-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "gamevonwebsite",
-  storageBucket: "gamevonwebsite.firebasestorage.app",
-  messagingSenderId: "718552016078",
-  appId: "1:718552016078:web:3a50eb176071ad5b321c9f",
-  measurementId: "G-L95ESZ482V"
-};
 const games = [
   new TikTakToe(),
   new Sudoku(),

@@ -30,7 +30,6 @@ class game {
     }
 
     async start() {
-        set(ref(db, `games/${this.name}`), "000000000");
         set(ref(db, `players/${await getIP()}/gameState`), "playing");
         this.btn.disable();
         // await sleep(3000);
@@ -81,12 +80,24 @@ export class TikTakToe extends game {
         return super.load(i);
     }
 
+    async start() {
+        const path = ref(db, `games/${this.name}`);
+        const snap = await get(path);
+
+        if (!snap.exists()) {
+            await set(path, "000000000");
+        }
+
+        super.start();
+    }
+
+
     initUI() {
         this.gameUI.text = new TextBlock("hallo", "white", 80, "center", { x: 0.5, y: 0.5 });
         this.gameUI.board = new ColorBlock("red", 80, 10);
         this.gameUI.blocks = Array.from({ length: 9 }, (_, i) => {
             // const y = i - 1;
-            return {image: new TextureBlock("https://picsum.photos/120", 120, 0), button: new ButtonQuiet("", 120, 120, 0, 0)};
+            return {image: new TextureBlock("Assets/tower.png", 120, 0), button: new ButtonQuiet("", 120, 120, 0, 0)};
         });
         this.gameUI.Can.slots = [
             this.gameUI.board.makeSlot({ x: 0, y: 0 }),
@@ -108,21 +119,26 @@ export class TikTakToe extends game {
                 console.log("clicked block " + block);
                 this.gameUI.blocks[block].image.setVisibility(true);
                 this.new = await get(ref(db, `games/${this.name}`));
-                this.new = this.new.val().substring(0, block) + (Object.keys(this.players).length % 2 === 1 ? "X" : "O") + this.new.val().substring(parseInt(block) + 1);
+                this.new = board.substring(0, block) 
+                + (board.split("").filter(x => x !== "0").length % 2 === 0 ? "X" : "O")
+                + board.substring(block + 1);
+
                 set(ref(db, `games/${this.name}`), this.new);
             });
         }
 
         onValue(ref(db, `games/${this.name}`), snapshot => {
             const board = snapshot.val();
-            for (const i in board) {
+            if (!board) return; // wichtig
+
+            for (let i = 0; i < board.length; i++) {
                 if (board[i] !== "0") {
                     this.gameUI.blocks[i].image.setVisibility(true);
                     this.gameUI.blocks[i].image.image = board[i] === "X" ? "Assets/tower.png" : "Assets/horse.png";
                 }
-
             }
         });
+
     }
 }
 

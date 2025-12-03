@@ -5,17 +5,7 @@ import { Canvas, TextBlock, TextureBlock, ColorBlock, ButtonQuiet } from './ui.j
 import { getDatabase, onDisconnect, ref, onValue, set, push , get, remove } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js";
 import { getIP, sleep, canvas } from './script.js';
-
-const firebaseConfig = {
-  apiKey: "AIzaSyBfT4NxPtu-ocx5lDntpV_U5f__-dpSiS8",
-  authDomain: "gamevonwebsite.firebaseapp.com",
-  databaseURL: "https://gamevonwebsite-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "gamevonwebsite",
-  storageBucket: "gamevonwebsite.firebasestorage.app",
-  messagingSenderId: "718552016078",
-  appId: "1:718552016078:web:3a50eb176071ad5b321c9f",
-  measurementId: "G-L95ESZ482V"
-};
+import { firebaseConfig } from './firebase.js';
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
@@ -40,6 +30,7 @@ class game {
     }
 
     async start() {
+        set(ref(db, `games/${this.name}`), "000000000");
         set(ref(db, `players/${await getIP()}/gameState`), "playing");
         this.btn.disable();
         // await sleep(3000);
@@ -102,7 +93,7 @@ export class TikTakToe extends game {
             ...Array.from({ length: 9 }, (_, i) => {
                 const pos = { x: -250 + (i % 3) * 250, y: -250 + Math.floor(i / 3) * 250 };
                 const res = [this.gameUI.blocks[i].button.makeSlot(pos), this.gameUI.blocks[i].image.makeSlot(pos)]
-                this.gameUI.blocks[i].image.image = Object.keys(this.players).length % 2 === 1 ? "Assets/tower.png" : "Assets/horse.png";
+                // this.gameUI.blocks[i].image.image = Object.keys(this.players).length % 2 === 1 ? "Assets/tower.png" : "Assets/horse.png";
 
                 return res;
                 
@@ -113,11 +104,25 @@ export class TikTakToe extends game {
             this.gameUI.blocks[block].image.setVisibility(false);
             // this.gameUI.blocks[block].button.setVisibility(false);
 
-            this.gameUI.blocks[block].button.addListener(() => {
+            this.gameUI.blocks[block].button.addListener(async () => {
                 console.log("clicked block " + block);
                 this.gameUI.blocks[block].image.setVisibility(true);
+                this.new = await get(ref(db, `games/${this.name}`));
+                this.new = this.new.val().substring(0, block) + (Object.keys(this.players).length % 2 === 1 ? "X" : "O") + this.new.val().substring(parseInt(block) + 1);
+                set(ref(db, `games/${this.name}`), this.new);
             });
         }
+
+        onValue(ref(db, `games/${this.name}`), snapshot => {
+            const board = snapshot.val();
+            for (const i in board) {
+                if (board[i] !== "0") {
+                    this.gameUI.blocks[i].image.setVisibility(true);
+                    this.gameUI.blocks[i].image.image = board[i] === "X" ? "Assets/tower.png" : "Assets/horse.png";
+                }
+
+            }
+        });
     }
 }
 

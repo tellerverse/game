@@ -3,7 +3,7 @@ import { getDatabase, onDisconnect, ref, onValue, set, push , get, remove } from
 import { Canvas, TextBlock, TextureBlock, ButtonQuiet } from './ui.js';
 import { TikTakToe, Sudoku, FindTheDifference, SchiffeVersenken} from "./game.js";
 
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: "AIzaSyBfT4NxPtu-ocx5lDntpV_U5f__-dpSiS8",
   authDomain: "gamevonwebsite.firebaseapp.com",
   databaseURL: "https://gamevonwebsite-default-rtdb.europe-west1.firebasedatabase.app",

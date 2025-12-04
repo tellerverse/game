@@ -13,7 +13,11 @@ const db = getDatabase(app);
 
 export const sleep = ms => new Promise(res => setTimeout(res, ms));
 export const canvas = new Canvas();
-
+onValue(ref(db, "color"), snapshot => {
+  const color = snapshot.val() || "white";
+  const sq = document.getElementById("square");
+  if (sq) sq.style.background = color;
+});
 export async function getIP() {
     try {
         const res = await fetch("https://api.ipify.org?format=json", { cache: "no-store" });

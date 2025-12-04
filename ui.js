@@ -179,6 +179,11 @@ export class TextureBlock extends Widget {
 
         return el;
     }
+
+    setImage(newImage) {
+        this.image = newImage;
+        if (this.element) this.element.style.backgroundImage = `url(${newImage})`;
+    }
 }
 
 export class ColorBlock extends Widget {

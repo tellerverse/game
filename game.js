@@ -74,7 +74,7 @@ export class TikTakToe extends game {
         this.name = "TikTakToe";
         this.imagedata = {image: "Assets/tiktaktoe.png", size: 30};
         this.gameUI = { Can: new Canvas(), blocks: Array.from({ length: 9 }, () => ({
-            image: new TextureBlock("Assets/tower.png", 120, 0),
+            image: new TextureBlock("Assets/load.png", 120, 0),
             button: new ButtonQuiet("", 120, 120, 0, 0)
         })) };
     }
@@ -107,6 +107,8 @@ export class TikTakToe extends game {
         const symbol = keys.length === 1 ? "X" : "O";
 
         set(ref(db, `games/${this.name}/players/${symbol}`), ip);
+        set(ref(db, `games/${this.name}/board`), "000000000");
+        set(ref(db, `games/${this.name}/turn`), "X");
     }
 
     initUI() {
@@ -116,11 +118,9 @@ export class TikTakToe extends game {
             this.gameUI.board.makeSlot({ x: 0, y: 0 }),
             ...Array.from({ length: 9 }, (_, i) => {
                 const pos = { x: -250 + (i % 3) * 250, y: -250 + Math.floor(i / 3) * 250 };
-                const block = this.gameUI.blocks[i];
-                if (!block) return []; // <- defensive check
                 return [
-                    block.button.makeSlot(pos),
-                    block.image.makeSlot(pos)
+                    this.gameUI.blocks[i].button.makeSlot(pos),
+                    this.gameUI.blocks[i].image.makeSlot(pos)
                 ];
             }).flat()
         ];
@@ -129,54 +129,73 @@ export class TikTakToe extends game {
 
         // Buttons konfigurieren
         this.gameUI.blocks.forEach((blockObj, index) => {
-            if (!blockObj) return; // <- defensive check
+
             blockObj.image.setVisibility(false);
 
             blockObj.button.addListener(async () => {
+                console.log(`Button ${index} clicked`);
                 const ip = await getIP();
+
                 const snap = await get(ref(db, `games/${this.name}`));
                 const data = snap.val();
-                if (!data) return;
 
                 const board = data.board;
                 const turn = data.turn;
                 const players = data.players;
 
+                // ermitteln, ob du X oder O bist
                 let mySymbol = null;
                 if (players.X === ip) mySymbol = "X";
                 if (players.O === ip) mySymbol = "O";
-                if (!mySymbol) return;        // Sicherheitsabbruch
-                if (turn !== mySymbol) return; // Nicht dein Zug
-                if (board[index] !== "0") return; // Feld belegt
-
+                console.log(`1`);
+                // Sicherheitsabbruch – du bist nicht im game
+                if (!mySymbol) return;
+                console.log(`2 ${mySymbol} ${turn}`);
+                // --- WICHTIG: Nicht dein Zug → blocken ---
+                if (turn !== mySymbol) return;
+                console.log(`3`);
+                // Feld belegt?
+                if (board[index] !== "0") return;
+                console.log(`4`);
+                // Board aktualisieren
                 const newBoard =
                     board.substring(0, index) +
                     mySymbol +
                     board.substring(index + 1);
+
                 const nextTurn = mySymbol === "X" ? "O" : "X";
 
+                // Firebase updaten
                 await set(ref(db, `games/${this.name}`), {
                     board: newBoard,
                     turn: nextTurn,
                     players
                 });
+                console.log(`Player ${mySymbol} placed at ${index}`);
             });
         });
 
         // UI updaten bei Änderungen
         onValue(ref(db, `games/${this.name}`), snapshot => {
             const data = snapshot.val();
-            if (!data || !this.gameUI.blocks) return;
-
+            if (!data) return;
+            if (!data.board) {
+                console.log("No board data found.");
+                return;
+            }
             const board = data.board;
+            console.log(`Board updated: ${board}`);
 
             for (let i = 0; i < 9; i++) {
-                const block = this.gameUI.blocks[i];
-                if (!block) continue; // <- defensive check
                 const symbol = board[i];
-                const img = block.image;
-                img.setVisibility(symbol !== "0");
-                if (symbol !== "0") img.image = symbol === "X" ? "Assets/tower.png" : "Assets/horse.png";
+                const img = this.gameUI.blocks[i].image;
+
+                if (symbol === "0") {
+                    img.setVisibility(false);
+                } else {
+                    img.setVisibility(true);
+                    img.setImage(symbol === "X" ? "Assets/tower.png" : "Assets/horse.png");
+                }
             }
         });
     }

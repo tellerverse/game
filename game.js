@@ -136,10 +136,14 @@ export class TikTakToe extends game {
     addPlayer(ip, name) {
         super.addPlayer(ip, name);
 
-        const keys = Object.keys(this.players);
-        const symbol = keys.length === 1 ? "X" : "O";
+        const players = Object.keys(this.players);
 
-        set(ref(db, `games/${this.name}/players/${symbol}`), ip);
+        const symbol = players.length === 1 ? "X" : "O";
+
+        set(
+            ref(db, `games/${this.name}/symbols/${symbol}`),
+            ip
+        );
     }
 
     initUI() {

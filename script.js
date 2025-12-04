@@ -1,64 +1,60 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js";
-import { getDatabase, onDisconnect, ref, onValue, set, push , get, remove } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
-import { Canvas, TextBlock, TextureBlock, ButtonQuiet } from './ui.js';
-import { TikTakToe, Sudoku, FindTheDifference, SchiffeVersenken} from "./game.js";
+import { getDatabase, onDisconnect, ref, onValue, set, get } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
+import { Canvas } from './ui.js';
+import { TikTakToe, Sudoku, FindTheDifference, SchiffeVersenken } from "./game.js";
 import { firebaseConfig } from './firebase.js';
 
-const games = [
-  new TikTakToe(),
-  new Sudoku(),
-  new SchiffeVersenken(),
-  new FindTheDifference()
-];
+// ------------------------------
+//   INIT
+// ------------------------------
+
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-onValue(ref(db, "color"), snapshot => {
-  const color = snapshot.val() || "white";
-  const sq = document.getElementById("square");
-  if (sq) sq.style.background = color;
-});
-
 export const sleep = ms => new Promise(res => setTimeout(res, ms));
-
-// window.addEventListener("beforeunload", async (event) => {
-//   remove(ref(db, `players/${await getIP()}`))
-//     .then(() => console.log("Eintrag gelöscht"))
-//     .catch(err => console.error(err));
-
-// });
+export const canvas = new Canvas();
 
 export async function getIP() {
-  let ip = "unknown";
-  try {
-    const res = await fetch("https://api.ipify.org?format=json", { cache: "no-store" });
-    if (res.ok) {
-      const data = await res.json();
-      ip = data.ip || "unknown";
+    try {
+        const res = await fetch("https://api.ipify.org?format=json", { cache: "no-store" });
+        if (!res.ok) return "unknown";
+        const data = await res.json();
+        return data.ip.replace(/\./g, "_");
+    } catch {
+        return "unknown";
     }
-  } catch {
-    ip = "unknown";
-  }
-  return ip.replace(/\./g, "_");
 }
 
-export const canvas = new Canvas();
+// ------------------------------
+//   SPIELE REGISTRIEREN
+// ------------------------------
+
+const games = [
+    new TikTakToe(),
+    new Sudoku(),
+    new SchiffeVersenken(),
+    new FindTheDifference()
+];
+
+// ------------------------------
+//   GAME → PLAYER SYNC
+// ------------------------------
+// Jedes Game hört NUR auf:
+//   games/<gameName>/players/<ip>
 
 games.forEach(game => {
     onValue(ref(db, `games/${game.name}/players`), snapshot => {
         const list = snapshot.val() || {};
-        
-        // Local sync
         const before = { ...game.players };
 
-        // Added
+        // hinzugefügte Spieler
         for (const ip in list) {
             if (!before[ip]) {
                 game.addPlayer(ip, list[ip]);
             }
         }
 
-        // Removed
+        // entfernte Spieler
         for (const ip in before) {
             if (!list[ip]) {
                 game.removePlayer(ip);
@@ -67,79 +63,47 @@ games.forEach(game => {
     });
 });
 
-document.addEventListener('DOMContentLoaded', async () => {
-  const IP = await getIP();
-  const playerRef = ref(db, `players/${IP}`);
-  const ipMapRef = ref(db, `ipMap/${IP}`);
-  onDisconnect(playerRef).remove();
-  const snap = await get(ipMapRef);
-  let name = snap.val();
+// ------------------------------
+//   DOM READY
+// ------------------------------
 
-  if (!name) {
-    name = prompt("Bitte gib deinen Namen ein:") || "Gast";
-    set(ipMapRef, name);
-  }
-  set(ref(db, `players/${IP}`), { name: name, game: "none", gameState: "none" });
+document.addEventListener("DOMContentLoaded", async () => {
 
-  const sq = document.getElementById("square");
-  function updateSquare() {
-    const size = Math.min(window.innerWidth, window.innerHeight);
-    sq.style.width = size + "px";
-    sq.style.height = size + "px";
-  }
-  window.addEventListener("resize", updateSquare);
-  updateSquare();
+    // ----- IP + Name sichern -----
 
+    const IP = await getIP();
+    const playerRef = ref(db, `players/${IP}`);
+    const nameRef = ref(db, `ipMap/${IP}`);
 
-  // const players = await get(ref(db, "players"));
-  // let i = 0;
-  // for (const IP in players.val() || {}) {
-  //   const player = players.val()[IP];
-  //   const playerName = new ButtonQuiet(`${player.Name}`);
-  //   canvas.addSlot(playerName.makeSlot({ x: 0, y: -250 + i * 20 }));
-  //   i++;
-  // }
-  // const img = new TextureBlock("https://picsum.photos/100", 100);
-  // canvas.addSlot(img.makeSlot({ x: 450, y: 450 }));
+    onDisconnect(playerRef).remove();
 
-  
-  for (let i = 0; i < 4; i++) {
-    // if (games[i] != null) canvas.addSlot(games[i].load(i));
-    if (games[i] != null) canvas.slots = [...canvas.slots, ...games[i].load(i)];
-  }
-  // let nameBtn = new ButtonQuiet(`Hallo ${name}`, 40, 60, 0, 50, 60, "#aaaaaa", false);
-  // canvas.addSlot(nameBtn.makeSlot({ x: 0, y: 0, z: 100 }));
-  canvas.mount();
-  let currentPlayers = {}; // Cache: { ip: {name, game} }
+    const savedName = await get(nameRef);
+    let name = savedName.val();
 
-  onValue(ref(db, "players"), snapshot => {
-      const newPlayers = snapshot.val() || {};
-      console.log("players updated");
-      for (const ip in newPlayers) {
-        if (!currentPlayers[ip]) {
-          handlePlayerAdded(ip, newPlayers[ip]);
-          continue;
-        }
-        if (currentPlayers[ip].game !== newPlayers[ip].game) handlePlayerMoved(ip, currentPlayers[ip], newPlayers[ip]);
-      }
-      for (const ip in currentPlayers) if (!newPlayers[ip]) handlePlayerRemoved(ip, currentPlayers[ip]);
-      currentPlayers = newPlayers;
-  });
-  
-  function handlePlayerAdded(ip, data) {
-    const game = games.find(g => g.name === data.game);
-    if (game) game.addPlayer(ip, data.name); 
-  }
+    if (!name) {
+        name = prompt("Bitte gib deinen Namen ein:") || "Gast";
+        set(nameRef, name);
+    }
 
-  function handlePlayerMoved(ip, oldData, newData) {
-      const oldGame = games.find(g => g.name === oldData.game);
-      const newGame = games.find(g => g.name === newData.game);
-      if (oldGame) oldGame.removePlayer(ip);
-      if (newGame) newGame.addPlayer(ip, newData.name);
-  }
+    // Speichere NUR den Namen des Spielers
+    await set(playerRef, { name });
 
-  function handlePlayerRemoved(ip, data) {
-      const game = games.find(g => g.name === data.game);
-      if (game) game.removePlayer(ip);
-  }
+    // ----- UI Setup -----
+
+    const sq = document.getElementById("square");
+    const resize = () => {
+        const size = Math.min(window.innerWidth, window.innerHeight);
+        sq.style.width = size + "px";
+        sq.style.height = size + "px";
+    };
+    window.addEventListener("resize", resize);
+    resize();
+
+    // ----- Game-Auswahl UI aufbauen -----
+
+    for (let i = 0; i < games.length; i++) {
+        canvas.slots.push(...games[i].load(i));
+    }
+
+    canvas.mount();
 });

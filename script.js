@@ -44,6 +44,29 @@ export async function getIP() {
 
 export const canvas = new Canvas();
 
+games.forEach(game => {
+    onValue(ref(db, `games/${game.name}/players`), snapshot => {
+        const list = snapshot.val() || {};
+        
+        // Local sync
+        const before = { ...game.players };
+
+        // Added
+        for (const ip in list) {
+            if (!before[ip]) {
+                game.addPlayer(ip, list[ip]);
+            }
+        }
+
+        // Removed
+        for (const ip in before) {
+            if (!list[ip]) {
+                game.removePlayer(ip);
+            }
+        }
+    });
+});
+
 document.addEventListener('DOMContentLoaded', async () => {
   const IP = await getIP();
   const playerRef = ref(db, `players/${IP}`);

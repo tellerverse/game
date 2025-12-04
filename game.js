@@ -30,12 +30,11 @@ class game {
     }
 
     async start() {
-        set(ref(db, `players/${await getIP()}/gameState`), "playing");
         this.btn.disable();
-        // await sleep(3000);
         canvas.setVisibility(false);
         this.initUI();
     }
+
 
     load(i) {
         const pos = { x: i < 2 ? -250 : 250, y: [1, 3].includes(i)? -250 : 250 }
@@ -48,23 +47,39 @@ class game {
 
     async tryRegister() {
         const ip = await getIP();
-        const snap = await get(ref(db, `players/${ip}/gameState`));
-        console.log(snap.val());
+        const nameSnap = await get(ref(db, `players/${ip}/name`));
+        const playerName = nameSnap.val() || "Unbekannt";
 
-        if (snap.val() === "none") await set(ref(db, `players/${ip}/game`), this.caption.text);
+        // Spieler ins Game eintragen
+        await set(
+            ref(db, `games/${this.name}/players/${ip}`),
+            playerName
+        );
     }
 
     addPlayer(ip, name) {
         this.players[ip] = name;
-        this.playerNames[Object.keys(this.players).length - 1].setText(name);
-        if (Object.keys(this.players).length >= this.playerAmount) this.start();
+
+        const idx = Object.keys(this.players).length - 1;
+        if (this.playerNames[idx]) {
+            this.playerNames[idx].setText(name);
+        }
+
+        if (Object.keys(this.players).length === this.playerAmount) {
+            this.start();
+        }
     }
+
 
     removePlayer(ip) {
         delete this.players[ip];
-        const remaining = Object.values(this.players);
-        this.playerNames.forEach((block, i) => { block.setText(remaining[i] ?? "");});
+
+        const names = Object.values(this.players);
+        this.playerNames.forEach((p, idx) => {
+            p.setText(names[idx] || "");
+        });
     }
+
 }
 
 export class TikTakToe extends game {
@@ -87,13 +102,34 @@ export class TikTakToe extends game {
         // Spielfeld initialisieren
         if (!snap.exists()) {
             await set(path, {
-                board: "000000000",
+                board: ".........",
                 turn: "X",     // X beginnt
                 players: {}    // IPs werden später eingetragen
             });
         }
 
-        super.start();
+        await super.start();
+
+        onValue(ref(db, `games/${this.name}`), snapshot => {
+            if (!this.gameUI.blocks) return;
+
+            const data = snapshot.val();
+            if (!data) return;
+
+            const board = data.board;
+
+            for (let i = 0; i < 9; i++) {
+                const symbol = board[i];
+                const img = this.gameUI.blocks[i].image;
+
+                if (symbol === "0") {
+                    img.setVisibility(false);
+                } else {
+                    img.setVisibility(true);
+                    img.image = symbol === "X" ? "Assets/tower.png" : "Assets/horse.png";
+                }
+            }
+        });
     }
 
     // Spieler X/O zuweisen
@@ -172,26 +208,6 @@ export class TikTakToe extends game {
                     players
                 });
             });
-        });
-
-        // UI updaten bei Änderungen
-        onValue(ref(db, `games/${this.name}`), snapshot => {
-            const data = snapshot.val();
-            if (!data) return;
-
-            const board = data.board;
-
-            for (let i = 0; i < 9; i++) {
-                const symbol = board[i];
-                const img = this.gameUI.blocks[i].image;
-
-                if (symbol === "0") {
-                    img.setVisibility(false);
-                } else {
-                    img.setVisibility(true);
-                    img.image = symbol === "X" ? "Assets/tower.png" : "Assets/horse.png";
-                }
-            }
         });
     }
 }

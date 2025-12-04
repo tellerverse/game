@@ -1,7 +1,7 @@
 // =====================
 //   CORE WIDGET SYSTEM
 // =====================
-
+import { lightenHex } from './utils.js';
 class Widget {
     constructor() {
         this.element = null;
@@ -222,7 +222,7 @@ export class ColorBlock extends Widget {
 }
 
 export class ButtonQuiet extends Widget {
-    constructor(text="", paddingY=10, paddingX=20, border=1, radius=5, fontSize=40, color="#ffffff", transparent=true) {
+    constructor(text="", paddingY=10, paddingX=20, border=1, radius=5, fontSize=40, color="#ffffff55") {
         super();
         this.text = text;
         this.basePaddingY = paddingY;
@@ -231,7 +231,6 @@ export class ButtonQuiet extends Widget {
         this.baseRadius = radius;
         this.baseFontSize = fontSize;
         this.baseColor = color;
-        this.transparent = transparent;
         this.listeners = []; // Array für Click-Funktionen
     }
 
@@ -245,8 +244,8 @@ export class ButtonQuiet extends Widget {
         el.textContent = this.text;
 
         el.style.transition = "background 1.2s, border-color 1.2s, color 1.2s, opacity 0.5s";
-        el.style.background = `${this.baseColor}${this.transparent ? "44" : "ff"}`;
-        el.style.border = `1px solid ${this.baseColor}${this.transparent ? "44" : "ff"}`;
+        el.style.background = `${this.baseColor}`;
+        el.style.border = `1px solid ${lightenHex(this.baseColor, 0.2)}`;
         el.style.cursor = "pointer";
         el.style.userSelect = "none";
 

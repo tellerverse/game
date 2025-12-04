@@ -116,9 +116,11 @@ export class TikTakToe extends game {
             this.gameUI.board.makeSlot({ x: 0, y: 0 }),
             ...Array.from({ length: 9 }, (_, i) => {
                 const pos = { x: -250 + (i % 3) * 250, y: -250 + Math.floor(i / 3) * 250 };
+                const block = this.gameUI.blocks[i];
+                if (!block) return []; // <- defensive check
                 return [
-                    this.gameUI.blocks[i].button.makeSlot(pos),
-                    this.gameUI.blocks[i].image.makeSlot(pos)
+                    block.button.makeSlot(pos),
+                    block.image.makeSlot(pos)
                 ];
             }).flat()
         ];
@@ -127,42 +129,32 @@ export class TikTakToe extends game {
 
         // Buttons konfigurieren
         this.gameUI.blocks.forEach((blockObj, index) => {
-
+            if (!blockObj) return; // <- defensive check
             blockObj.image.setVisibility(false);
 
             blockObj.button.addListener(async () => {
                 const ip = await getIP();
-
                 const snap = await get(ref(db, `games/${this.name}`));
                 const data = snap.val();
+                if (!data) return;
 
                 const board = data.board;
                 const turn = data.turn;
                 const players = data.players;
 
-                // ermitteln, ob du X oder O bist
                 let mySymbol = null;
                 if (players.X === ip) mySymbol = "X";
                 if (players.O === ip) mySymbol = "O";
+                if (!mySymbol) return;        // Sicherheitsabbruch
+                if (turn !== mySymbol) return; // Nicht dein Zug
+                if (board[index] !== "0") return; // Feld belegt
 
-                // Sicherheitsabbruch – du bist nicht im game
-                if (!mySymbol) return;
-
-                // --- WICHTIG: Nicht dein Zug → blocken ---
-                if (turn !== mySymbol) return;
-
-                // Feld belegt?
-                if (board[index] !== "0") return;
-
-                // Board aktualisieren
                 const newBoard =
                     board.substring(0, index) +
                     mySymbol +
                     board.substring(index + 1);
-
                 const nextTurn = mySymbol === "X" ? "O" : "X";
 
-                // Firebase updaten
                 await set(ref(db, `games/${this.name}`), {
                     board: newBoard,
                     turn: nextTurn,
@@ -174,20 +166,17 @@ export class TikTakToe extends game {
         // UI updaten bei Änderungen
         onValue(ref(db, `games/${this.name}`), snapshot => {
             const data = snapshot.val();
-            if (!data) return;
+            if (!data || !this.gameUI.blocks) return;
 
             const board = data.board;
 
             for (let i = 0; i < 9; i++) {
+                const block = this.gameUI.blocks[i];
+                if (!block) continue; // <- defensive check
                 const symbol = board[i];
-                const img = this.gameUI.blocks[i].image;
-
-                if (symbol === "0") {
-                    img.setVisibility(false);
-                } else {
-                    img.setVisibility(true);
-                    img.image = symbol === "X" ? "Assets/tower.png" : "Assets/horse.png";
-                }
+                const img = block.image;
+                img.setVisibility(symbol !== "0");
+                if (symbol !== "0") img.image = symbol === "X" ? "Assets/tower.png" : "Assets/horse.png";
             }
         });
     }

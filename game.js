@@ -139,7 +139,7 @@ export class TikTakToe extends game {
                 if (snap.val().turn !== mySymbol || board[index] !== "0") {this.blocked = false; return};
                 await set(ref(db, `games/${this.name}`), {
                     board: board.substring(0, index) + mySymbol + board.substring(index + 1),
-                    turn: "X" ? "O" : "X",
+                    turn: snap.val().turn === "X" ? "O" : "X",
                     players
                 });
                 this.blocked = false;

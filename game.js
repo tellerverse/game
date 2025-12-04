@@ -194,7 +194,7 @@ export class TikTakToe extends game {
                     img.setVisibility(false);
                 } else {
                     img.setVisibility(true);
-                    img.setImage(symbol === "X" ? "Assets/tower.png" : "Assets/horse.png");
+                    img.setImage(symbol === "X" ? "Assets/Cross.png" : "Assets/Circle.png");
                 }
             }
         });

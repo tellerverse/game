@@ -179,13 +179,234 @@ export class SchiffeVersenken extends game {
     constructor() {
         super();
         this.name = "Schiffe Versenken";
-        this.imagedata = {image: "Assets/ship.png", size: 60};
+        this.imagedata = { image: "Assets/ship.png", size: 60 };
+
+        this.size = 10;
+
+        this.gameUI = {
+            Can: new Canvas(),
+            myGrid: Array.from({ length: 100 }, () => ({
+                image: new TextureBlock("", 80, 5),
+            })),
+            enemyGrid: Array.from({ length: 100 }, () => ({
+                image: new TextureBlock("", 80, 5),
+                button: new ButtonQuiet("", 80, 80, 0, 0, 1, "#00000000")
+            }))
+        };
     }
 
-    load(i) {
-        return super.load(i);
+    // UI laden
+    load(i) { return super.load(i); }
+
+    // Spieler hinzu
+    async addPlayer(ip, name) {
+        super.addPlayer(ip, name);
+        const keys = Object.keys(this.players);
+
+        const symbol = keys.length === 1 ? "A" : "B";
+
+        await set(ref(db, `games/${this.name}/players/${symbol}`), ip);
+
+        // Erste Initialisierung des Game-Objekts
+        if (keys.length === 1) {
+            await set(ref(db, `games/${this.name}`), {
+                players: { [symbol]: ip },
+                boards: {},
+                shots: { A: "", B: "" },
+                turn: "A"
+            });
+        }
+
+        if (keys.length === 2) {
+            const path = ref(db, `games/${this.name}/boards`);
+
+            const boards = {
+                A: this.generateBoard(),
+                B: this.generateBoard(),
+            };
+            await set(path, boards);
+        }
+    }
+
+    generateBoard() {
+        // 10x10 – Random Schiffe für minimale Implementierung
+        let board = Array(100).fill(0);
+
+        const ships = [5,4,3,3,2];
+
+        const rnd = max => Math.floor(Math.random()*max);
+
+        for (let ship of ships) {
+            let placed = false;
+            while (!placed) {
+                let dir = rnd(2); // 0 horizontal, 1 vertikal
+                let x = rnd(10);
+                let y = rnd(10);
+                let ok = true;
+
+                for (let i = 0; i < ship; i++) {
+                    let nx = x + (dir === 0 ? i : 0);
+                    let ny = y + (dir === 1 ? i : 0);
+
+                    if (nx >= 10 || ny >= 10) { ok = false; break; }
+
+                    if (board[ny * 10 + nx] === 1) { ok = false; break; }
+                }
+
+                if (!ok) continue;
+
+                for (let i = 0; i < ship; i++) {
+                    let nx = x + (dir === 0 ? i : 0);
+                    let ny = y + (dir === 1 ? i : 0);
+                    board[ny * 10 + nx] = 1;
+                }
+
+                placed = true;
+            }
+        }
+
+        return board.join("");
+    }
+
+    async start() {
+        set(ref(db, `players/${await getIP()}/gameState`), "playing");
+        this.btn.disable();
+        canvas.setVisibility(false);
+        this.initUI();
+    }
+
+    initUI() {
+        const gridOffset = 250;
+
+        this.gameUI.Can.slots = [
+            // eigenes Board
+            ...this.gameUI.myGrid.map((g, i) => {
+                const pos = {
+                    x: -gridOffset + (i % 10) * 50,
+                    y: -250 + Math.floor(i / 10) * 50
+                };
+                return g.image.makeSlot(pos);
+            }),
+
+            // Gegnerboard
+            ...this.gameUI.enemyGrid.map((g, i) => {
+                const pos = {
+                    x: gridOffset + (i % 10) * 50,
+                    y: -250 + Math.floor(i / 10) * 50
+                };
+                return [
+                    g.button.makeSlot(pos),
+                    g.image.makeSlot(pos)
+                ];
+            }).flat()
+        ];
+
+        this.gameUI.Can.mount();
+        this.bindInput();
+        this.startSync();
+    }
+
+    bindInput() {
+        this.gameUI.enemyGrid.forEach((cell, index) => {
+            cell.button.addListener(async () => {
+                const ip = await getIP();
+                const snap = await get(ref(db, `games/${this.name}`));
+                const players = snap.val().players;
+                const turn = snap.val().turn;
+                const shots = snap.val().shots;
+
+                let me = players.A === ip ? "A" : "B";
+                let enemy = me === "A" ? "B" : "A";
+
+                if (turn !== me) return;
+
+                if (shots[me].includes(index + ",")) return;
+
+                shots[me] += index + ",";
+
+                await set(ref(db, `games/${this.name}/shots`), shots);
+                await set(ref(db, `games/${this.name}/turn`), enemy);
+            });
+        });
+    }
+
+    startSync() {
+        onValue(ref(db, `games/${this.name}`), snapshot => {
+            const data = snapshot.val();
+            if (!data) return;
+
+            const ip = JSON.parse(localStorage.getItem("cachedIP") || "\"\"") || "";
+            let me = data.players.A === ip ? "A" : "B";
+            let enemy = me === "A" ? "B" : "A";
+
+            const myBoard = data.boards?.[me] || "";
+            const enemyBoard = data.boards?.[enemy] || "";
+
+            const myShots = data.shots?.[enemy] || "";
+            const enemyShots = data.shots?.[me] || "";
+
+            // eigenes Board
+            for (let i = 0; i < 100; i++) {
+                const img = this.gameUI.myGrid[i].image;
+                if (myBoard[i] === "1" && enemyShots.includes(i + ",")) {
+                    img.setImage("Assets/hit.png");
+                    img.setVisibility(true);
+                } else if (enemyShots.includes(i + ",")) {
+                    img.setImage("Assets/miss.png");
+                    img.setVisibility(true);
+                } else if (myBoard[i] === "1") {
+                    img.setImage("Assets/ship.png");
+                    img.setVisibility(true);
+                } else {
+                    img.setVisibility(false);
+                }
+            }
+
+            // gegner Board (nur Treffer/Fehlschüsse)
+            for (let i = 0; i < 100; i++) {
+                const img = this.gameUI.enemyGrid[i].image;
+
+                if (myShots.includes(i + ",")) {
+                    if (enemyBoard[i] === "1") {
+                        img.setImage("Assets/hit.png");
+                        img.setVisibility(true);
+                    } else {
+                        img.setImage("Assets/miss.png");
+                        img.setVisibility(true);
+                    }
+                } else {
+                    img.setVisibility(false);
+                }
+            }
+
+            this.checkWin(data);
+        });
+    }
+
+    checkWin(data) {
+        const boards = data.boards;
+        const shots = data.shots;
+
+        if (!boards) return;
+        if (!shots) return;
+
+        const allHit = (enemyBoard, myShots) => {
+            for (let i = 0; i < 100; i++) {
+                if (enemyBoard[i] === "1" && !myShots.includes(i + ",")) {
+                    return false;
+                }
+            }
+            return true;
+        };
+
+        const AWin = allHit(boards.B, shots.A);
+        const BWin = allHit(boards.A, shots.B);
+
+        if (AWin) alert("Spieler A gewinnt!");
+        if (BWin) alert("Spieler B gewinnt!");
     }
 }
+
 
 export class FindTheDifference extends game {
     constructor() {

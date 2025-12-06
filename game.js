@@ -30,11 +30,17 @@ class game {
     }
 
     async start() {
-        set(ref(db, `players/${await getIP()}/gameState`), "playing");
-        this.btn.disable();
-        // await sleep(3000);
-        canvas.setVisibility(false);
-        this.initUI();
+      set(ref(db, `players/${await getIP()}`), {
+        game: this.name,
+        gameState: "waiting"
+      });
+
+      onValue(ref(db, `games/${this.name}/players`), snap => {
+        if (snap.exists() && Object.keys(snap.val()).length >= this.playerAmount) {
+          document.getElementById("loading").style.display = "none";
+          this.initUI();
+        }
+      });
     }
 
     load(i) {

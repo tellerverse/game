@@ -3,330 +3,98 @@
   src: url('Assets/font/burbankbigcondensed_black.otf') format('opentype');
 }
 
-/* --- Grund --- */
 body, html {
+  background: #3a3a3a;
   margin:0;
   padding:0;
   overflow:hidden;
   height:100%;
-  font-family: 'Burbank', 'Poppins', sans-serif;
-  color: #fff;
-  perspective: 1000px;
-  cursor: url('Assets/cursor/cursor-pink.cur'), auto;
+  font-family: 'Reem Kufi', 'Burbank';
+  perspective: 100px;
+  cursor: url('Assets/cursor/mouse.cur'), auto;
 }
-a, button, button > div, a > div, .player-btn, .switch-btn {
-  cursor: url('Assets/cursor/cursor-red.cur'), pointer;
-}
-#square {
-  position: fixed;
-  background: red; /* egal */
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 100px;   /* Fallback */
-  height: 100px;  /* Fallback */
-  z-index: 0;     /* Hoch genug, damit es über den Videos liegt */
-}
-/* --- Hintergrundvideo --- */
-.bg-video {
-  position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  object-fit:cover;
-  z-index:-2;
-  transition: opacity 1s ease, transform 10s linear, filter 10s linear;
-}
-.bg-video.hidden { 
-  opacity:0;
+a, button, button > div, a > div {
+  cursor: url('Assets/cursor/mouse.cur'), pointer;
 }
 
-/* --- Intro Overlay --- */
+/* body {
+  margin: 0;
+  font-family: system-ui;
+  background: #3a3a3a;
+  color: #111;
+} */
 
-.center-text {
-  font-size:10rem;
-  text-transform:uppercase;
-  animation: blink 2s infinite, pulse 2s infinite;
-}
-@keyframes blink { 
-  50% { 
-    opacity:0.4;
-  }
-}
-@keyframes pulse {
-  0%,100%{
-    transform:scale(1);
-  } 
-  50%{
-    transform:scale(1.1);
-  } 
+.status {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ccc;
 }
 
-/* --- Slider container --- */
-#slider { position: relative;
-  width:100%;
-  height:100%;
-  opacity:0;
-  transition: opacity 1s ease;
-}
-#slider.active { 
-  opacity:1;
+.status.online {
+  background: #3cff6b;
 }
 
-.card-wrapper {
-  position: relative;   /* FIX */
-  width: 100%;
-  height: 100%;
-  max-height: 100vh;    /* nicht 90vh */
-  overflow-y: auto;     /* scrollt */
-  display: flex;
-  justify-content: center;
-  align-items: center;  /* Card bleibt in Mitte */
+footer {
+  padding: 200px;
+  text-align: center;
+  color: #888;
 }
 
-/* --- Card --- */
-.card {
-  position:absolute;
-  top:50%;
-  left:50%;
-  transform: translate(-50%, -50%) scale(0.85);
-  width:90vw;
-  max-width:700px;
-  border-radius:35px;
-  padding:30px;
-  backdrop-filter: blur(20px);
-  background: rgba(0,0,0,0.6);
-  border:3px solid var(--card-color);
-  color: var(--card-color);
-  display:flex;
-  flex-direction:column;
-  gap:0px;
-  box-sizing:border-box;
-  opacity:0;
-  transition: all 0.8s ease;
-  overflow: visible;
-  animation: borderPulse 2s infinite;
-/* wichtig: player kann außerhalb platziert werden */
+.games {
+  padding: 32px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 24px;
 }
 
-@keyframes borderPulse {
-  0%, 100% {
-    border-color: var(--card-color);
-    box-shadow: 0 0 10px var(--card-color);
-  }
-  50% {
-    border-color: color-mix(in srgb, var(--card-color) 70%, white 30%);
-    box-shadow: 0 0 20px color-mix(in srgb, var(--card-color) 70%, white 30%);
-  }
-}
-@keyframes colorPulse {
-  0%, 100% {
-    text-shadow: 0 0 0px var(--card-color), 0 0 0px var(--card-color);
-  }
-  50% {
-    text-shadow: 0 0 5px var(--card-color), 0 0 10px var(--card-color);
-  }
-}
-.card.active {
-  opacity:1;
-  transform: translate(-50%, -50%) scale(1);
-  z-index:2;
-}
-
-/* --- Header --- */
-.card-header {
-  display:flex;
-  gap:20px;
-  align-items:flex-start;
-}
-.profile-pic {
-  width:150px;
-  height:150px;
-  border-radius:50%;
-  object-fit:cover;
-  border:3px solid var(--card-color);
-  flex-shrink:0;
-  animation: borderPulse 2s infinite;
-}
-.header-info { 
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-  flex:1;
-}
-.header-info h1 { 
-  font-size:4rem;
-  margin:0;
-  color: var(--card-color);
-  animation: colorPulse 2s infinite;
-}
-
-.letterblink span {
-  color: var(--card-color);
-  display: inline-block;
-  animation: wipe 1.2s ease-in-out infinite;
-}
-
-.letterblink span:nth-child(1) { animation-delay: 0s; }
-.letterblink span:nth-child(2) { animation-delay: 0.1s; }
-.letterblink span:nth-child(3) { animation-delay: 0.2s; }
-.letterblink span:nth-child(4) { animation-delay: 0.3s; }
-.letterblink span:nth-child(5) { animation-delay: 0.4s; }
-.letterblink span:nth-child(6) { animation-delay: 0.5s; }
-.letterblink span:nth-child(7) { animation-delay: 0.6s; }
-.letterblink span:nth-child(8) { animation-delay: 0.7s; }
-.letterblink span:nth-child(9) { animation-delay: 0.8s; }
-
-
-@keyframes wipe {
-  0%, 20%, 100% { color: var(--card-color); filter: brightness(1); }
-  50% { color: var(--card-color); filter: brightness(0.6); }
-}
-/* --- Social --- */
-.social-links { 
-  list-style:none;
-  padding:0;
-  margin:0;
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px 16px;
-}
-
-.social-links li a {
-  display:flex;
-  align-items:center;
-  gap:8px;
-  text-decoration:none;
-  font-weight:600;
-  font-size:2.5rem;
-  color: var(--card-color);
-  transition: color .2s, transform .2s;
-}
-
-.social-links li a:hover { 
-  color:#fff;
-  filter: drop-shadow(0 0 10px var(--card-color));
-  transform: scale(1.08) rotate(-2deg);
-}
-
-.social-icon {
-  width: 50px; 
-  height: 50px;
-  display: inline-block; 
-  background-color: currentColor; 
-  transition: transform 0.3s ease, color 0.3s ease, filter 0.3s ease; 
-  cursor: pointer; 
-  mask: var(--icon-url) no-repeat center / contain; 
-  -webkit-mask: var(--icon-url) no-repeat center / contain; 
-}
-
-.social-icon.primary {
-  color: var(--currentColor); 
-  transform: scale(1); 
-}
-
-/* --- Card text --- */
-.card-text { 
-  color: var(--card-color);
-  font-size:2rem;
-  line-height:1.3;
-}
-.text_link {
-  text-decoration: underline var(--card-color) 1px;
-  color: var(--card-color);
-  font-weight:600;
-}
-.text_link:hover { 
-  text-decoration: underline #fff 1px;
-  filter: brightness(1.2) drop-shadow(0 0 10px var(--card-color));
-}
-
-/* --- visitor display --- */
-.visitor-display {
-  display:flex;
-  align-items:center;
-  gap:6px;
-  font-size:0.85rem;
-  margin-top:10px;
-  
-}
-.visitor-eye {
-  width:25px;
-  height:25px;
-  background-color: var(--card-color);
-  -webkit-mask: url('Assets/eye.svg') no-repeat center / contain;
-  mask: url('Assets/eye.svg') no-repeat center / contain;
-  filter: drop-shadow(0 0 5px currentColor);
-}
-
-/* --- card-play-btn (wichtig, existiert) --- */
-.card-play-btn {
-  width: 40%;
-  padding: 15px 0;
-  margin-top: 20px;
-  border-radius: 15px;
-  background: var(--card-color);
-  border: none;
-  color: #fff;
-  font-family: 'Burbank', sans-serif;
-  font-size: 2rem;
-  font-weight: bold;
-  text-transform: uppercase;
+.game {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  background: #ffffff3e;
+  border-radius: 20px;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 15px 40px rgba(0,0,0,.08);
   cursor: pointer;
-  box-shadow: 0 0 20px var(--card-color);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition: transform .2s ease, box-shadow .2s ease;
 }
-.card-play-btn:hover { 
+
+.game:hover {
   transform: scale(1.05);
-  box-shadow: 0 0 30px var(--card-color);
+  box-shadow: 0 25px 60px rgba(0,0,0,.3);
 }
 
-#player-controls button:hover .player-icon {
-  transform: scale(1.2);
-  filter: drop-shadow(0 0 5px var(--card-color));
+.game .name {
+  font-size: 2.0rem;
+  font-weight: 800;
+  text-align: center;
+  pointer-events: none;
+  color: rgb(255, 255, 255);
 }
 
-/* --- Switch Button --- */
-/* --- Switch Button (unten rechts in der Karte) --- */
-.switch-btn {
+.status {
   position: absolute;
-  bottom: 15px;
-  right: 15px;
-  width: 55px;
-  height: 55px;
+  top: 14px;
+  right: 14px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  background: var(--card-color);
-  border: none;
-  cursor: pointer;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  transition: transform 0.2s, box-shadow 0.2s;
-  z-index: 5;
-  animation: borderPulse 2s infinite;
+  background: #bbb;
 }
 
-.switch-btn:hover {
-  transform: scale(1.08);
-  box-shadow: 0 0 35px var(--card-color);
+.status.online {
+  background: #31ff61;
 }
 
-.switch-icon {
-  width: 70%;
-  height: 70%;
-  object-fit: cover;
-  border-radius: 50%;
+.icon {
+  width: 90px;
+  height: 90px;
+  opacity: .85;
 }
 
-/* Allgemeine Mask-Button/Icons */
-.player-btn {
-  all: unset;
-/* entfernt Browser-Styles */
-  display: inline-block;
-  width: 35px;
-  height: 35px;
-  background-color: currentColor;
+.icon.primary {
+  background-color: var(--color);
   -webkit-mask-image: var(--icon-url);
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-position: center;
@@ -335,318 +103,79 @@ a, button, button > div, a > div, .player-btn, .switch-btn {
           mask-repeat: no-repeat;
           mask-position: center;
           mask-size: contain;
-  color: var(--card-color);
-  cursor: pointer;
-  transition: transform 0.3s ease, filter 0.3s ease;
-  border-radius: 0px;
 }
 
-.player-btn:hover {
-  transform: scale(1.2);
-  filter: drop-shadow(0 0 10px var(--card-color));
+.banner {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+
+  padding: 32px;
+  text-align: center;
+
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(0,0,0,0) 0%,
+      #3a3a3a 100%
+    ),
+    linear-gradient(
+      90deg,
+      #22cbdc,
+      #a41bff,
+      #ff30e3,
+      #2222dc
+    );
+
+  background-size:
+    100% 100%,
+    400% 100%;
+
+  background-blend-mode: normal;
+
+  animation: cyanShift 3s ease infinite;
 }
 
-/* --- Eye Icon (div) --- */
-.visitor-eye {
-  width: 25px;
-  height: 25px;
-  background-color: currentColor;
-  -webkit-mask-image: var(--icon-url);
-  -webkit-mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  -webkit-mask-size: contain;
-          mask-image: var(--icon-url);
-          mask-repeat: no-repeat;
-          mask-position: center;
-          mask-size: contain;
-  color: var(--card-color);
-  filter: drop-shadow(0 0 2px currentColor);
+
+@keyframes cyanShift {
+  0%   { background-position: 0% 0%,   0% 0%; }
+  50%  { background-position: 0% 0%, 100% 100%; }
+  100% { background-position: 0% 0%,   0% 0%; }
 }
 
-.player-btn.primary, .visitor-eye.primary {
-  color: var(--card-color);
-}
-
-.player-btn.primary:hover {
-  transform: scale(1.2);
-  filter: drop-shadow(0 0 10px var(--card-color));
-}
-
-.visitor-eye.primary {
-  width: 25px;
-  height: 25px;
-}
-
-/* --- media player (wird INNEN in active card positioniert) --- */
-/* Position absolute relative to the card (JS will move the element into the active card) */
-#media-player {
-  position: absolute;
-/* important: inside card */
-  bottom: -78px;
-     /* offset under the card;
-adjust if needed */
-  left: 50%;
-  transform: translateX(-50%);
-  transition: border-color 0.5s ease, box-shadow 0.5s ease;
-  display:flex;
-  align-items:center;
-  gap:12px;
-  padding:10px 14px;
-  border-radius:14px;
-  background: rgba(0,0,0,0.5);
-/* overwritten by JS to add border and shadow */
-  backdrop-filter: blur(12px);
-  z-index:6;
-  min-width: 320px;
-  box-shadow: 0 6px 30px rgba(0,0,0,0.45);
-  animation: borderPulse 2s infinite;
-}
-
-/* media player internals */
-#player-cover { 
-  width:48px;
-  height:48px;
-  object-fit:cover;
-  border-radius:10px;
-  cursor:pointer;
-  flex-shrink:0;
-}
-#player-info { 
-  display:flex;
-  flex-direction:column;
-  gap:2px;
-  min-width:60px;
-  max-width:260px;
-  overflow:hidden;
-}
-#player-info a { 
-  color: var(--card-color);
-  text-decoration:none;
-  font-size:1.4rem;
-  white-space:nowrap;
-  text-overflow:ellipsis;
-  overflow:hidden;
-}
-
-#player-info a:hover { 
-  text-decoration: underline #fff 1px;
-  filter: brightness(1.2) drop-shadow(0 0 10px var(--card-color));
-}
-
-#player-controls { 
-  display:flex;
-  align-items:center;
-  gap:8px;
-}
-
-/* buttons */
-#player-controls button { 
-  background:none;
-  border:none;
-  color:#fff;
-  font-size:1.15rem;
-  cursor:pointer;
-}
-
-/* time slider (playback) */
-#time-slider {
-  -webkit-appearance:none;
-  width:220px;
-  height:5px;
-  background: var(--card-color);
-  border-radius:4px;
-  cursor:pointer;
-  margin:0 4px;
-}
-#time-slider::-webkit-slider-thumb {
-  -webkit-appearance:none;
-  width:14px;
-  height:14px;
-  background:#fff;
-  border-radius:50%;
-  border:2px solid var(--card-color);
-  transition: background .15s, transform .12s;
-}
-#time-slider:hover::-webkit-slider-thumb { 
-  background: var(--card-color);
-  transform:scale(1.18);
-}
-#time-slider::-moz-range-thumb { 
-  width:14px;
-  height:14px;
-  background:#fff;
-  border-radius:50%;
-  border:2px solid var(--card-color);
-}
-
-/* volume slider (small) */
-#volume-slider { 
-  transform: rotate(-90deg);
-  transform-origin: 50% 50%;
-  width:50px;
-
-  height:5px;
-  -webkit-appearance:none;
-  background: var(--card-color);
-  border-radius:4px;
-  cursor:pointer;
-}
-#volume-slider::-webkit-slider-thumb { 
-  -webkit-appearance:none;
-  width:12px;
-  height:12px;
-  border-radius:50%;
-  background:#fff;
-  border:2px solid var(--card-color);
-}
-#volume-slider:hover::-webkit-slider-thumb { 
-  background: var(--card-color);
-  transform:scale(1.15);
-}
-
-/* --- version label --- */
-#version { 
-  position: fixed;
-  bottom: 10px;
-  right: 15px;
-  color: rgba(255,255,255,0.4);
-  font-size: 0.9rem;
+.banner h1 {
+  font-size: 4rem;
+  margin: 0px 0 0;
+  color: rgba(255, 255, 255, 0.807);
+  text-align: center;
+  font-weight: 500;
   letter-spacing: 1px;
+  font-family: 'Burbank';
 }
 
-/* --- responsive --- */
-@media (max-width:900px) {
-  #media-player { 
-    min-width: 260px;
-    bottom: -90px;
-  } 
-  #time-slider { 
-    width: 160px;
-  }
-}
-@media (max-width:600px) {
-  .card { 
-    width:95vw;
-    padding:20px;
-  }
-  .card-header { 
-    flex-direction:column;
-    align-items:center;
-    text-align:center;
-  }
-  .profile-pic { 
-    width:100px;
-    height:100px;
-  }
-  .header-info h1 { 
-    font-size:2rem;
-  }
-  .player-info { 
-    display:none;
-  } /* save space */
-  #media-player { 
-    bottom: -110px;
-    left: 50%;
-    transform: translateX(-50%);
-  }
+.banner p {
+  margin: 4px 0 0;
+  font-size: 0.9rem;
+  color: rgba(255,255,255,.85);
 }
 
-/* Mobile Media Player fixieren */
-@media (max-width: 768px) {
-  .social-links li a {
-    gap:4px;
-    font-size:1.7rem;
-  }
-  .social-icon {
-    width: 35px; 
-    height: 35px;
-  }
-  .card-text { 
-    font-size:1rem;
-    line-height:1.5;
-  }
-  #volume-slider {
-    display: none;
-  }
-  #time-slider { 
-    width: 100px;
-  }
-  .card {
-    transform: translateX(-50%) scale(0.85);
-    top: 5%;
-    margin: 20px auto; /* zentriert horizontal, Abstand oben */
-    scale: 1; /* optional */
-  }
-  .card-wrapper {
-    position: relative;
-    max-height: 100vh; /* ganze Höhe */
-    overflow-y: auto;
-    display: block; /* flex/center entfernen */
-  }
-  #media-player {
-    position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
-    border-radius: 14px !important;
-    padding: 10px;
-    box-sizing: border-box;
-    backdrop-filter: blur(12px);
-    z-index: 9999;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  #player-info a { 
-    font-size:1.2rem;
-  }
-  #player-info {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
+@media (max-width: 600px) {
+
+  .games {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    padding: 16px;
   }
 
-  #player-controls {
-    gap: 4px;
+  .game {
+    border-radius: 16px;
   }
 
-  #version {
-    display: none;
+  .game .name {
+    font-size: 1.5rem;
   }
-  
-  body, html {
-    overflow-x: hidden;
+
+  .banner h1 {
+    font-size: 2rem;
   }
 }
-
-.card-content > * {
-  opacity: 0;
-  transform: translateY(10px);
-  transition: opacity 0.8s ease, transform 0.6s ease;
-}
-
-.card.active .card-content > * {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.card.active .card-content > *:nth-child(1) { transition-delay: 0.3s; }
-.card.active .card-content > *:nth-child(2) { transition-delay: 0.6s; }
-.card.active .card-content > *:nth-child(3) { transition-delay: 0.8s; }
-.card.active .card-content > *:nth-child(4) { transition-delay: 1.0s; }
-
-.social-links > * {
-  opacity: 0;
-  transition: opacity 0.8s ease, transform 0.6s ease;
-}
-
-.card.active .social-links > * {
-  opacity: 1;
-}
-
-.card.active .social-links > *:nth-child(1) { transition-delay: 0.3s; }
-.card.active .social-links > *:nth-child(2) { transition-delay: 0.4s; }
-.card.active .social-links > *:nth-child(3) { transition-delay: 0.5s; }
-.card.active .social-links > *:nth-child(4) { transition-delay: 0.6s; }

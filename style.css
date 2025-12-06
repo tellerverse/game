@@ -93,7 +93,7 @@ footer {
   opacity: .85;
 }
 
-.icon.primary {
+.primary {
   background-color: var(--color);
   -webkit-mask-image: var(--icon-url);
   -webkit-mask-repeat: no-repeat;

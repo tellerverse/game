@@ -7,7 +7,7 @@ const db = getDatabase(app);
 
 document.querySelectorAll(".game").forEach(el => {
   el.onclick = () => {
-    location.href = `/games/?game=${el.dataset.game}`;
+    location.href = `/game/games/?game=${el.dataset.game}`;
   };
 });
 

@@ -1,4 +1,4 @@
-import { TikTakToe, Sudoku, SchiffeVersenken } from "../game.js";
+import { TikTakToe, Sudoku, SchiffeVersenken } from "../gameclasses.js";
 
 const params = new URLSearchParams(location.search);
 const gameName = params.get("game");

@@ -8,7 +8,8 @@ if (!gameName) location.href = "/";
 const games = {
   tiktaktoe: TikTakToe,
   sudoku: Sudoku,
-  schiffe: SchiffeVersenken
+  schiffe: SchiffeVersenken,
+  find: FindTheDifference
 };
 
 const GameClass = games[gameName];

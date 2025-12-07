@@ -8,7 +8,7 @@ const db = getDatabase(app);
 
 class game {
     constructor() {
-        this.id = "tiktaktoe";
+        this.id = "error";
         this.info = {};
         this.sessions = [];
         // this.Init()
@@ -194,7 +194,7 @@ export class TikTakToe extends game {
 // }
     constructor() {
         super();
-        this.id = "Tik Tak Toe";
+        this.id = "TikTakToe";
     }
 
     load(i) {

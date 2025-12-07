@@ -31,5 +31,16 @@ export function lightenHex(hex, percent) {
     return `#${r}${g}${b}${a}`;
 }
 
-// Beispiel: 20% heller
-console.log(lightenHex('#12345678', 0.2)); 
+export async function getIP() {
+  let ip = "unknown";
+  try {
+    const res = await fetch("https://api.ipify.org?format=json", { cache: "no-store" });
+    if (res.ok) {
+      const data = await res.json();
+      ip = data.ip || "unknown";
+    }
+  } catch {
+    ip = "unknown";
+  }
+  return ip.replace(/\./g, "_");
+}

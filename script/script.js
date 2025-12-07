@@ -1,6 +1,18 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js";
 import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
 import { firebaseConfig } from "../firebase.js";
+import { TikTakToe, Sudoku, SchiffeVersenken, FindTheDifference } from "../gameclasses.js";
+
+export const games = {
+  tiktaktoe: new TikTakToe,
+  sudoku: new Sudoku,
+  schiffe: new SchiffeVersenken,
+  find: new FindTheDifference
+};
+
+for (const [key, game] of Object.entries(games)) {
+  await game.Init()
+}
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);

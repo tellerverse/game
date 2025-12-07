@@ -194,7 +194,7 @@ export class TikTakToe extends game {
 // }
     constructor() {
         super();
-        this.id = "TikTakToe";
+        this.id = "tik";
     }
 
     load(i) {
@@ -205,7 +205,7 @@ export class TikTakToe extends game {
 export class Sudoku extends game {
     constructor() {
         super();
-        this.id = "Sudoku";
+        this.id = "sudoku";
     }
 
     load(i) {
@@ -216,7 +216,7 @@ export class Sudoku extends game {
 export class SchiffeVersenken extends game {
     constructor() {
         super();
-        this.id = "Schiffe Versenken";
+        this.id = "ship";
     }
 
     load(i) {
@@ -227,7 +227,7 @@ export class SchiffeVersenken extends game {
 export class FindTheDifference extends game {
     constructor() {
         super();
-        this.id = "Find the Difference";
+        this.id = "find";
     }
 
     load(i) {

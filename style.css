@@ -10,8 +10,8 @@ body, html {
   background: var(--bgcolor);
   margin:0;
   padding:0;
-  overflow:hidden;
-  height:100%;
+  overflow:auto;
+  height:auto;
   font-family: 'Reem Kufi', 'Burbank';
   perspective: 100px;
   cursor: url('Assets/cursor/mouse.cur'), auto;

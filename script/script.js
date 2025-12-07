@@ -23,6 +23,19 @@ document.querySelectorAll(".game").forEach(el => {
   };
 });
 
+document.querySelectorAll(".game").forEach(gameEl => {
+  const gameId = gameEl.dataset.game;
+  if (!gameId) return;
+
+  const colorRef = ref(db, `games/${gameId}/info/Color`);
+
+  onValue(colorRef, snap => {
+    if (!snap.exists()) return;
+    gameEl.style.setProperty("--color", snap.val());
+  });
+});
+
+
 // Warte-Status pro Game
 onValue(ref(db, "players"), snap => {
   const players = snap.val() || {};

@@ -171,6 +171,12 @@ footer {
   color: rgba(255,255,255,.85);
 }
 
+#loading {
+  padding: 100px;
+  text-align: center;
+  color: #ffffff;
+}
+
 @media (max-width: 600px) {
 
   .games {

@@ -59,7 +59,7 @@ class game {
       // ✅ 1. freie Session suchen
       for (const [key, session] of Object.entries(sessions)) {
         const players = session.players ?? {};
-        if (Object.keys(players).length < this.info.PlayerAmount) {
+        if (Object.keys(players).length < this.info.playerAmount) {
           targetIndex = key;
           break;
         }
@@ -85,7 +85,7 @@ class game {
       const updated = await get(playersRef);
       const count = Object.keys(updated.val()).length;
 
-      if (count >= this.info.PlayerAmount) {
+      if (count >= this.info.playerAmount) {
         await set(
           ref(db, `games/${this.id}/sessions/${targetIndex}/started`),
           true
@@ -93,7 +93,7 @@ class game {
         this.start(targetIndex);
       }
     }
-    
+
     end() {
         const remaining = Object.values(this.players);
         this.playerNames.forEach((block, i) => { block.setText(remaining[i] ?? "");});

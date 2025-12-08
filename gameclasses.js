@@ -14,11 +14,11 @@ class game {
         // this.Init()
     }
 
-    async Init() {
-        const Info = await get(ref(db, `games/${this.id}/info`));
+    async init() {
+        const info = await get(ref(db, `games/${this.id}/info`));
         this.info = {
-            PlayerAmount: Info.PlayerAmount,
-            Color: Info.Color
+            playerAmount: info.playerAmount,
+            color: info.color
         }
     }
 
@@ -46,43 +46,46 @@ class game {
     }
 
     async start() {
-        
+        console.log(`${id} started`)
     }
 
     async addPlayer(ip) {
       const sessionsRef = ref(db, `games/${this.id}/sessions`);
-      const sessionsSnap = await get(sessionsRef);
+      const snap = await get(sessionsRef);
 
+      const sessions = snap.exists() ? snap.val() : {};
       let targetIndex = null;
-      let sessions = sessionsSnap.exists() ? sessionsSnap.val() : [];
 
-      // 1. freie Session suchen
-      for (let i = 0; i < sessions.length; i++) {
-        const players = sessions[i]?.players ?? {};
-        if (Object.keys(players).length < this.playerAmount) {
-          targetIndex = i;
+      // ✅ 1. freie Session suchen
+      for (const [key, session] of Object.entries(sessions)) {
+        const players = session.players ?? {};
+        if (Object.keys(players).length < this.info.PlayerAmount) {
+          targetIndex = key;
           break;
         }
       }
 
-      // 2. keine freie Session → neue erstellen
+      // ✅ 2. keine freie Session → neue
       if (targetIndex === null) {
-        targetIndex = sessions.length;
+        targetIndex = Object.keys(sessions).length.toString();
         await set(ref(db, `games/${this.id}/sessions/${targetIndex}`), {
           players: {},
           started: false
         });
       }
 
-      // 3. Spieler hinzufügen
-      const playersRef = ref(db, `games/${this.id}/sessions/${targetIndex}/players`);
+      // ✅ 3. Spieler hinzufügen
+      const playersRef = ref(
+        db,
+        `games/${this.id}/sessions/${targetIndex}/players`
+      );
       await push(playersRef, ip);
 
-      // 4. prüfen ob Session jetzt voll ist
-      const updatedSnap = await get(playersRef);
-      const count = Object.keys(updatedSnap.val()).length;
+      // ✅ 4. Starten wenn voll
+      const updated = await get(playersRef);
+      const count = Object.keys(updated.val()).length;
 
-      if (count >= this.playerAmount) {
+      if (count >= this.info.PlayerAmount) {
         await set(
           ref(db, `games/${this.id}/sessions/${targetIndex}/started`),
           true
@@ -90,8 +93,7 @@ class game {
         this.start(targetIndex);
       }
     }
-
-
+    
     end() {
         const remaining = Object.values(this.players);
         this.playerNames.forEach((block, i) => { block.setText(remaining[i] ?? "");});

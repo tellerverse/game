@@ -11,7 +11,7 @@ export const games = {
 };
 
 for (const [key, game] of Object.entries(games)) {
-  await game.Init()
+  await game.init()
 }
 
 const app = initializeApp(firebaseConfig);

@@ -10,7 +10,7 @@ class game {
     constructor() {
         this.id = "error";
         this.info = {};
-        this.sessions = [];
+        // this.sessions = [];
         // this.Init()
     }
 
@@ -20,36 +20,32 @@ class game {
             playerAmount: info.val().playerAmount,
             color: info.val().color
         }
-        console.log(`thisinfo ${this.info}`)
-        console.log(`info ${info}`)
-        console.log(`info ${info.val().playerAmount}`)
     }
 
-    setSession(index, data) {
-        set(ref(db, `games/${this.id}/sessions/${index}`), data);
-        this.sessions[index] = data
-        if (data.endsession) {
-            location.href = "../";
-            this.end();
-            console.log(`end session ${index}`)
-        }
-    }
+    // setSession(index, data) {
+    //     set(ref(db, `games/${this.id}/sessions/${index}`), data);
+    //     this.sessions[index] = data
+    //     if (data.endsession) {
+    //         location.href = "../";
+    //         this.end();
+    //         console.log(`end session ${index}`)
+    //     }
+    // }
 
-    addSession(data) {
-        const newindex = this.sessions.length
-        set(ref(db, `games/${this.id}/sessions/${newindex}`), data);
-        this.sessions[newindex] = data
-        onValue(ref(db, `games/${this.id}/sessions/${newindex}`), snap => {
-            if (snap.exists() && Object.keys(snap.val().players).length == this.playerAmount) {
-                document.getElementsByClassName("loading").style.display = "none";
-                // this.initUI();
-            }
-            console.log(`new data for ${this.id} session ${newindex}`)
-        });
-    }
+    // addSession(data) {
+    //     const newindex = this.sessions.length
+    //     set(ref(db, `games/${this.id}/sessions/${newindex}`), data);
+    //     this.sessions[newindex] = data
+    //     onValue(ref(db, `games/${this.id}/sessions/${newindex}`), snap => {
+    //         if (snap.exists() && Object.keys(snap.val().players).length == this.playerAmount) {
+    //             document.getElementsByClassName("loading").style.display = "none";
+    //         }
+    //         console.log(`new data for ${this.id} session ${newindex}`)
+    //     });
+    // }
 
     async start() {
-        console.log(`${id} started`)
+        console.log(`${this.id} started`)
     }
 
     async addPlayer(ip) {
@@ -58,24 +54,18 @@ class game {
 
         const sessions = snap.exists() ? snap.val() : {};
         let targetIndex = null;
-        console.log(`info add ${this.info}`)
-        // ✅ 1. freie Session suchen
+
         let i = -1
         for (const [key, session] of Object.entries(sessions)) {
             i++;
             
             const players = session.players ?? {};
-            console.log(`${players}`)
-            console.log(`${Object.keys(players).length}`)
-            console.log(`${this.info.playerAmount}`)
             if (Object.keys(players).length < this.info.playerAmount) {
                 targetIndex = i;
                 break;
             }
         }
-        console.log(`${targetIndex}`)
 
-        // ✅ 2. keine freie Session → neue
         if (targetIndex === null) {
             targetIndex = Object.keys(sessions).length.toString();
             await set(ref(db, `games/${this.id}/sessions/${targetIndex}`), {
@@ -83,14 +73,10 @@ class game {
                 started: false
             });
         }
-        console.log(`${targetIndex}`)
-        // ✅ 3. Spieler hinzufügen
+
         const playersRef = await get(ref(db, `games/${this.id}/sessions/${targetIndex}/players`))
         const index = playersRef.val()?.length ?? 0
         await set(ref(db, `games/${this.id}/sessions/${targetIndex}/players/${index}`), ip);
-
-        // ✅ 4. Starten wenn voll
-        // const updated = await get(playersRef);
 
         if (index +1 >= this.info.playerAmount) {
             await set(
@@ -102,8 +88,6 @@ class game {
     }
 
     end() {
-        const remaining = Object.values(this.players);
-        this.playerNames.forEach((block, i) => { block.setText(remaining[i] ?? "");});
     }
 }
 

@@ -1,13 +1,13 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js";
 import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
 import { firebaseConfig } from "../firebase.js";
-import { TikTakToe, Sudoku, SchiffeVersenken, FindTheDifference } from "../gameclasses.js";
+import { Tik, Sudoku, Ship, Find } from "../gameclasses.js";
 
 export const games = {
-  tiktaktoe: new TikTakToe,
+  tik: new Tik,
   sudoku: new Sudoku,
-  schiffe: new SchiffeVersenken,
-  find: new FindTheDifference
+  ship: new Ship,
+  find: new Find
 };
 
 for (const [key, game] of Object.entries(games)) {
@@ -27,7 +27,7 @@ document.querySelectorAll(".game").forEach(gameEl => {
   const gameId = gameEl.dataset.game;
   if (!gameId) return;
 
-  const colorRef = ref(db, `games/${gameId}/info/Color`);
+  const colorRef = ref(db, `games/${gameId}/info/color`);
 
   onValue(colorRef, snap => {
     if (!snap.exists()) return;

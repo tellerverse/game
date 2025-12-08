@@ -17,9 +17,12 @@ class game {
     async init() {
         const info = await get(ref(db, `games/${this.id}/info`));
         this.info = {
-            playerAmount: info.playerAmount,
-            color: info.color
+            playerAmount: info.val().playerAmount,
+            color: info.val().color
         }
+        console.log(`thisinfo ${this.info}`)
+        console.log(`info ${info}`)
+        console.log(`info ${info.val().playerAmount}`)
     }
 
     setSession(index, data) {
@@ -50,48 +53,52 @@ class game {
     }
 
     async addPlayer(ip) {
-      const sessionsRef = ref(db, `games/${this.id}/sessions`);
-      const snap = await get(sessionsRef);
+        const sessionsRef = ref(db, `games/${this.id}/sessions`);
+        const snap = await get(sessionsRef);
 
-      const sessions = snap.exists() ? snap.val() : {};
-      let targetIndex = null;
-
-      // ✅ 1. freie Session suchen
-      for (const [key, session] of Object.entries(sessions)) {
-        const players = session.players ?? {};
-        if (Object.keys(players).length < this.info.playerAmount) {
-          targetIndex = key;
-          break;
+        const sessions = snap.exists() ? snap.val() : {};
+        let targetIndex = null;
+        console.log(`info add ${this.info}`)
+        // ✅ 1. freie Session suchen
+        let i = -1
+        for (const [key, session] of Object.entries(sessions)) {
+            i++;
+            
+            const players = session.players ?? {};
+            console.log(`${players}`)
+            console.log(`${Object.keys(players).length}`)
+            console.log(`${this.info.playerAmount}`)
+            if (Object.keys(players).length < this.info.playerAmount) {
+                targetIndex = i;
+                break;
+            }
         }
-      }
+        console.log(`${targetIndex}`)
 
-      // ✅ 2. keine freie Session → neue
-      if (targetIndex === null) {
-        targetIndex = Object.keys(sessions).length.toString();
-        await set(ref(db, `games/${this.id}/sessions/${targetIndex}`), {
-          players: {},
-          started: false
-        });
-      }
+        // ✅ 2. keine freie Session → neue
+        if (targetIndex === null) {
+            targetIndex = Object.keys(sessions).length.toString();
+            await set(ref(db, `games/${this.id}/sessions/${targetIndex}`), {
+                players: [],
+                started: false
+            });
+        }
+        console.log(`${targetIndex}`)
+        // ✅ 3. Spieler hinzufügen
+        const playersRef = await get(ref(db, `games/${this.id}/sessions/${targetIndex}/players`))
+        const index = playersRef.val()?.length ?? 0
+        await set(ref(db, `games/${this.id}/sessions/${targetIndex}/players/${index}`), ip);
 
-      // ✅ 3. Spieler hinzufügen
-      const playersRef = ref(
-        db,
-        `games/${this.id}/sessions/${targetIndex}/players`
-      );
-      await push(playersRef, ip);
+        // ✅ 4. Starten wenn voll
+        // const updated = await get(playersRef);
 
-      // ✅ 4. Starten wenn voll
-      const updated = await get(playersRef);
-      const count = Object.keys(updated.val()).length;
-
-      if (count >= this.info.playerAmount) {
-        await set(
-          ref(db, `games/${this.id}/sessions/${targetIndex}/started`),
-          true
-        );
-        this.start(targetIndex);
-      }
+        if (index +1 >= this.info.playerAmount) {
+            await set(
+                ref(db, `games/${this.id}/sessions/${targetIndex}/started`),
+                true
+            );
+            this.start(targetIndex);
+        }
     }
 
     end() {
@@ -100,7 +107,7 @@ class game {
     }
 }
 
-export class TikTakToe extends game {
+export class Tik extends game {
 //     constructor() {
 //         super();
 //         this.playerAmount = 2;
@@ -215,7 +222,7 @@ export class Sudoku extends game {
     }
 }
 
-export class SchiffeVersenken extends game {
+export class Ship extends game {
     constructor() {
         super();
         this.id = "ship";
@@ -226,7 +233,7 @@ export class SchiffeVersenken extends game {
     }
 }
 
-export class FindTheDifference extends game {
+export class Find extends game {
     constructor() {
         super();
         this.id = "find";

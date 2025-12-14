@@ -1,10 +1,9 @@
 // import { Canvas, TextBlock, TextureBlock, ColorBlock, ButtonQuiet } from './ui.js';
-import { getDatabase, onDisconnect, ref, onValue, set, push , get, remove } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js";
-import { firebaseConfig } from './firebase.js';
+import { onDisconnect, ref, onValue, set, push , get, remove } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
+import { db } from './firebasedata.js';
+import { log } from './utils.js';
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+
 
 class game {
     constructor() {
@@ -49,45 +48,59 @@ class game {
     }
 
     async addPlayer(ip) {
-        const sessionsRef = ref(db, `games/${this.id}/sessions`);
-        const snap = await get(sessionsRef);
+        const sessionsRootRef = ref(db, `games/${this.id}/sessions`);
+        const sessionsSnap = await get(sessionsRootRef);
 
-        const sessions = snap.exists() ? snap.val() : {};
-        let targetIndex = null;
+        for (const [sessionId, session] of Object.entries(sessionsSnap.val() || {})) {
+            if (!session.players) {
+                await remove(ref(db, `games/${this.id}/sessions/${sessionId}`));
+            }
+        }
 
-        let i = -1
-        for (const [key, session] of Object.entries(sessions)) {
-            i++;
-            
-            const players = session.players ?? {};
-            if (Object.keys(players).length < this.info.playerAmount) {
-                targetIndex = i;
+        const freshSnap = await get(sessionsRootRef);
+
+        let targetSessionId = null;
+        for (const [sessionId, session] of Object.entries(freshSnap.val() || {})) {
+            if (Object.keys(session.players).length < this.info.playerAmount) {
+                targetSessionId = sessionId;
                 break;
             }
         }
 
-        if (targetIndex === null) {
-            targetIndex = Object.keys(sessions).length.toString();
-            await set(ref(db, `games/${this.id}/sessions/${targetIndex}`), {
-                players: [],
-                started: false
+        if (!targetSessionId) {
+            const sessionsRef = ref(db, `games/${this.id}/sessions`);
+            const sessionsSnap = await get(sessionsRef);
+            const used = Object.keys(sessionsSnap.val() || {}).map(Number);
+            let index = 0;
+            while (used.includes(index)) index++;
+            targetSessionId = index
+            await set(ref(db, `games/${this.id}/sessions/${index}`), {
+                players: {},
+                started: false,
             });
         }
 
-        const playersRef = await get(ref(db, `games/${this.id}/sessions/${targetIndex}/players`))
-        const index = playersRef.val()?.length ?? 0
-        await set(ref(db, `games/${this.id}/sessions/${targetIndex}/players/${index}`), ip);
+        const playersRef = ref(db, `games/${this.id}/sessions/${targetSessionId}/players`);
+        const playersSnap = await get(playersRef);
+        const used = Object.keys(playersSnap.val() || {}).map(Number);
 
-        if (index +1 >= this.info.playerAmount) {
-            await set(
-                ref(db, `games/${this.id}/sessions/${targetIndex}/started`),
-                true
-            );
-            this.start(targetIndex);
-        }
+        let index = 0;
+        while (used.includes(index)) index++;
+
+        const playerRef = ref(db, `games/${this.id}/sessions/${targetSessionId}/players/${index}`);
+        await set(playerRef, ip);
+
+        onDisconnect(playerRef).remove();
+
+        return { sessionId: targetSessionId, playerIndex: index };
     }
 
-    end() {
+
+    async end(sessionIndex) {
+      await set(
+        ref(db, `games/${this.id}/sessions/${sessionIndex}/ended`),
+        true
+      );
     }
 }
 

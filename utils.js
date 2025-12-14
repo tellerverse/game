@@ -1,3 +1,6 @@
+import { ref, set } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
+import { db } from './firebasedata.js';
+
 export function lightenHex(hex, percent) {
     // Entferne #
     hex = hex.replace('#', '');
@@ -32,15 +35,24 @@ export function lightenHex(hex, percent) {
 }
 
 export async function getIP() {
-  let ip = "unknown";
-  try {
-    const res = await fetch("https://api.ipify.org?format=json", { cache: "no-store" });
-    if (res.ok) {
-      const data = await res.json();
-      ip = data.ip || "unknown";
+    let ip = "unknown";
+    try {
+        const res = await fetch("https://api.ipify.org?format=json", { cache: "no-store" });
+        if (res.ok) {
+        const data = await res.json();
+        ip = data.ip || "unknown";
+        }
+    } catch {
+        ip = "unknown";
     }
-  } catch {
-    ip = "unknown";
-  }
-  return ip.replace(/\./g, "_");
+    return ip.replace(/\./g, "_");
+}
+
+export function log(string) {
+    const now = new Date();
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    const ss = String(now.getSeconds()).padStart(2, '0');
+
+    set(ref(db, 'log'), string + ` ${mm}:${ss}`);
+
 }

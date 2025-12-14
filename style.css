@@ -1,235 +1,231 @@
 :root {
-  --bgcolor: #001928;
+    --bgcolor: #001928;
 }
 @font-face {
-  font-family: 'Burbank';
-  src: url('Assets/font/burbankbigcondensed_black.otf') format('opentype');
+    font-family: 'Burbank';
+    src: url('Assets/font/burbankbigcondensed_black.otf') format('opentype');
 }
 
 body, html {
-  background: var(--bgcolor);
-  margin:0;
-  padding:0;
-  overflow:auto;
-  height:auto;
-  font-family: 'Reem Kufi', 'Burbank';
-  perspective: 100px;
-  cursor: url('Assets/cursor/mouse.cur'), auto;
+    background: var(--bgcolor);
+    margin:0;
+    padding:0;
+    overflow:auto;
+    height:auto;
+    font-family: 'Reem Kufi', 'Burbank';
+    perspective: 100px;
+        cursor: url('Assets/cursor/mouse.cur'), auto;
 }
 a, button, button > div, a > div {
-  cursor: url('Assets/cursor/mouse.cur'), pointer;
+    cursor: url('Assets/cursor/mouse.cur'), pointer;
 }
 
 footer {
-  padding: 200px;
-  text-align: center;
-  color: #888;
+    padding: 200px;
+    text-align: center;
+    color: #888;
 }
 
 .games {
-  padding: 32px;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 24px;
+    padding: 32px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 24px;
 }
 
 .game {
-  position: relative;
-  aspect-ratio: 1 / 1;
-  background: #ffffff3e;
-  border-radius: 20px;
-  display: grid;
-  place-items: center;
-  box-shadow: 0 15px 40px rgba(0,0,0,.08);
-  cursor: pointer;
-  transition: transform .2s ease, box-shadow .2s ease;
-  background:
-    linear-gradient(
-      to bottom,
-      rgba(0,0,0,0) 0%,
-      var(--bgcolor) 100%
-    ),
-    linear-gradient(
-      180deg,
-      rgb(from var(--color) r g b / 1),
-      rgb(from var(--color) r g b / .5)
-    );
+    position: relative;
+    aspect-ratio: 1 / 1;
+    background: #ffffff3e;
+    border-radius: 20px;
+    display: grid;
+    place-items: center;
+    box-shadow: 0 15px 40px rgba(0,0,0,.08);
+    cursor: pointer;
+    transition: transform .2s ease, box-shadow .2s ease;
+    background:
+        linear-gradient(
+        to bottom,
+        rgba(0,0,0,0) 0%,
+        var(--bgcolor) 100%
+        ),
+        linear-gradient(
+        180deg,
+        rgb(from var(--color) r g b / 1),
+        rgb(from var(--color) r g b / .5)
+        );
 
-  background-size:
-    100% 100%,
-    100% 400%;
+    background-size:
+        100% 100%,
+        100% 400%;
 
-  background-blend-mode: normal;
+    background-blend-mode: normal;
 
-  animation: cyanShift 6s ease infinite;
+    animation: cyanShift 6s ease infinite;
 }
 
 .game:hover {
-  animation: none;
-  background: rgb(from var(--color) r g b / .75);
-  transform: scale(1.05);
-  box-shadow: 0 25px 60px rgb(from var(--color) r g b / .75);;
+    animation: none;
+    background: rgb(from var(--color) r g b / .75);
+    transform: scale(1.05);
+    box-shadow: 0 25px 60px rgb(from var(--color) r g b / .75);;
 }
 
 .game .name {
-  font-size: 2.0rem;
-  font-weight: 800;
-  text-align: center;
-  pointer-events: none;
-  color: rgb(255, 255, 255);
+    font-size: 2.0rem;
+    font-weight: 800;
+    text-align: center;
+    pointer-events: none;
+    color: rgb(255, 255, 255);
 }
 
 .status {
-  position: absolute;
-  top: -10px;
-  right: -10px;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: color-mix(
-    in srgb,
-    var(--color) 60%,
-    black
-  );
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: color-mix(
+        in srgb,
+        var(--color) 60%,
+        black
+    );
 
-}
-
-.status.online {
-  background: #31ff61;
 }
 
 .icon {
-  padding: 20px;
-  width: 100%;
-  height: 100%;
-  /* opacity: .85; */
+    padding: 20px;
+    width: 100%;
+    height: 100%;
+    /* opacity: .85; */
 }
 
 .primary {
-  background-color: var(--color);
-  -webkit-mask-image: var(--icon-url);
-  -webkit-mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  -webkit-mask-size: contain;
-          mask-image: var(--icon-url);
-          mask-repeat: no-repeat;
-          mask-position: center;
-          mask-size: contain;
+    background-color: var(--color);
+    -webkit-mask-image: var(--icon-url);
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
+            mask-image: var(--icon-url);
+            mask-repeat: no-repeat;
+            mask-position: center;
+            mask-size: contain;
 }
 
 .banner {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
 
-  padding: 32px;
-  text-align: center;
+    padding: 32px;
+    text-align: center;
 
-  background:
-    linear-gradient(
-      to bottom,
-      rgba(0,0,0,0) 0%,
-      var(--bgcolor) 100%
-    ),
-    linear-gradient(
-      180deg,
-      #0088dc,
-      #22cbdc,
-      #ff7fca,
-      #ff30dc
-    );
+    background:
+        linear-gradient(
+        to bottom,
+        rgba(0,0,0,0) 0%,
+        var(--bgcolor) 100%
+        ),
+        linear-gradient(
+        180deg,
+        #0088dc,
+        #22cbdc,
+        #ff7fca,
+        #ff30dc
+        );
 
-  background-size:
-    100% 100%,
-    100% 400%;
+    background-size:
+        100% 100%,
+        100% 400%;
 
-  background-blend-mode: normal;
+    background-blend-mode: normal;
 
-  animation: cyanShift 12s ease infinite;
+    animation: cyanShift 12s ease infinite;
 }
 
 
 @keyframes cyanShift {
-  0%   { background-position: 0% 0%,   0% 0%; }
-  50%  { background-position: 0% 0%, 100% 100%; }
-  100% { background-position: 0% 0%,   0% 0%; }
+    0%   { background-position: 0% 0%,   0% 0%; }
+    50%  { background-position: 0% 0%, 100% 100%; }
+    100% { background-position: 0% 0%,   0% 0%; }
 }
 
 .banner h1 {
-  font-size: 4rem;
-  margin: 0px 0 0;
-  color: rgba(255, 255, 255, 0.807);
-  text-align: center;
-  font-weight: 500;
-  letter-spacing: 1px;
-  font-family: 'Burbank';
-}
+    font-size: 4rem;
+    margin: 0px 0 0;
+    color: rgba(255, 255, 255, 0.807);
+    text-align: center;
+    font-weight: 500;
+    letter-spacing: 1px;
+    font-family: 'Burbank';
+    }
 
 .banner p {
-  margin: 4px 0 0;
-  font-size: 0.9rem;
-  color: rgba(255,255,255,.85);
+    margin: 4px 0 0;
+    font-size: 0.9rem;
+    color: rgba(255,255,255,.85);
 }
 
 .loading {
-  font-size: 2rem;
-  font-weight: 800;
-  text-align: center;
-  padding: 100px;
-  background: linear-gradient(
-    180deg,
-    #0088dc,
-    #22cbdc,
-    #ff7fca,
-    #ff30dc
-  );
+    font-size: 2rem;
+    font-weight: 800;
+    text-align: center;
+    padding: 100px;
+    background: linear-gradient(
+        180deg,
+        #0088dc,
+        #22cbdc,
+        #ff7fca,
+        #ff30dc
+    );
 
-  background-size: 100% 400%;
-  animation: loadingShift 12s ease infinite;
+    background-size: 100% 400%;
+    animation: loadingShift 12s ease infinite;
 
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
 }
 
 @keyframes loadingShift {
-  0%   { background-position: 0% 0%; }
-  50%  { background-position: 0% 100%; }
-  100% { background-position: 0% 0%; }
+    0%   { background-position: 0% 0%; }
+    50%  { background-position: 0% 100%; }
+    100% { background-position: 0% 0%; }
 }
 
 .loading::after {
-  content: '';
-  display: inline-block;
-  width: 1ch;
-  text-align: left;
-  animation: dots 1s steps(3, end) infinite;
+    content: '';
+    display: inline-block;
+    width: 1ch;
+    text-align: left;
+    animation: dots 1s steps(3, end) infinite;
 }
 
 @keyframes dots {
-  0% { content: ''; }
-  33% { content: '.'; }
-  66% { content: '..'; }
-  100% { content: '...'; }
+    0% { content: ''; }
+    33% { content: '.'; }
+    66% { content: '..'; }
+    100% { content: '...'; }
 }
 
 @media (max-width: 600px) {
 
-  .games {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
-    padding: 16px;
-  }
+    .games {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        padding: 16px;
+    }
 
-  .game {
-    border-radius: 16px;
-  }
+    .game {
+        border-radius: 16px;
+    }
 
-  .game .name {
-    font-size: 1.5rem;
-  }
+    .game .name {
+        font-size: 1.5rem;
+    }
 
-  .banner h1 {
-    font-size: 2rem;
-  }
+    .banner h1 {
+        font-size: 2rem;
+    }
 }

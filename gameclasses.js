@@ -2,8 +2,6 @@ import { onDisconnect, ref, onValue, set, push , get, remove } from "https://www
 import { db } from './firebasedata.js';
 import { log } from './utils.js';
 
-
-
 class game {
     constructor() {
         this.id = "error";
@@ -37,7 +35,7 @@ class game {
 
         let targetSessionId = null;
         for (const [sessionId, session] of Object.entries(freshSnap.val() || {})) {
-            if (Object.keys(session.players).length < this.info.playerAmount) {
+            if (Object.keys(session.players || {}).length < this.info.playerAmount) {
                 targetSessionId = sessionId;
                 break;
             }

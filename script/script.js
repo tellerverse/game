@@ -15,7 +15,7 @@ for (const [key, game] of Object.entries(games)) {
 
 document.querySelectorAll(".game").forEach(el => {
     el.onclick = () => {
-        location.href = location.hostname.endsWith("github.io") ? `/game/gamelauncher/?game=${el.dataset.game}` : `/gamelauncher/?game=${el.dataset.game}`;
+        location.href = location.hostname.endsWith("github.io") ? `/game/${el.dataset.game}` : `/${el.dataset.game}`;
     };
 });
 

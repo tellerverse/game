@@ -1,0 +1,69 @@
+<!-- <!DOCTYPE html>
+<html lang="de">
+    <head>
+        <meta charset="UTF-8">
+        <title>game</title>
+        <link rel="stylesheet" href="../../style.css">
+    </head>
+    <body>
+        <header class="banner large">
+            <h1>mor!tz sein<br><span style='font-size:1rem'>&lt;html></span>tiktaktoe<span style='font-size:1rem'>&lt;/html></span></h1>
+        </header>
+        <div class="loading"></div>
+
+        <script type="module" src="gamelauncher.js"></script>
+    </body>
+</html> -->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Tic Tac Toe</title>
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<div class="loading">Warte auf Mitspieler …</div>
+
+<script type="module">
+import { Tik } from "../gameclasses.js";
+import { getIP } from "../utils.js";
+import { ref, onValue } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
+import { db } from "../firebasedata.js";
+
+const params = new URLSearchParams(location.search);
+let sessionId = params.get("session");
+
+const game = new Tik();
+await game.init();
+
+const IP = await getIP();
+
+/* 🔴 FALL 1: KEINE SESSION → MATCHMAKING */
+if (!sessionId) {
+    await game.addPlayer(IP);
+
+    const sessionRef = ref(db, `games/${game.id}/sessions`);
+
+    onValue(sessionRef, snap => {
+        const sessions = snap.val();
+        if (!sessions) return;
+
+        for (const [id, session] of Object.entries(sessions)) {
+            if (!session.started) continue;
+            if (Object.values(session.players || {}).includes(IP)) {
+                location.href = `?session=${id}`;
+            }
+        }
+    });
+}
+
+/* 🟢 FALL 2: SESSION EXISTIERT → SPIEL STARTEN */
+else {
+    console.log("Session gestartet:", sessionId);
+    // 👉 HIER deine eigentliche Game-Logik initialisieren
+}
+</script>
+
+</body>
+</html>

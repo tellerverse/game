@@ -10,7 +10,17 @@
             <h1>mor!tz sein<br><span style='font-size:1rem'>&lt;html></span>tiktaktoe<span style='font-size:1rem'>&lt;/html></span></h1>
         </header>
         <div class="loading"></div>
-
+        <div id="board" style="display:none;grid-template-columns:repeat(3,100px);gap:5px">
+          <button data-i="0"></button>
+          <button data-i="1"></button>
+          <button data-i="2"></button>
+          <button data-i="3"></button>
+          <button data-i="4"></button>
+          <button data-i="5"></button>
+          <button data-i="6"></button>
+          <button data-i="7"></button>
+          <button data-i="8"></button>
+        </div>
         
 <script type="module">
 import { Tik } from "../gameclasses.js";
@@ -80,35 +90,110 @@ if (!sessionId) {
 else {
     const playerRef = ref(db, `games/${game.id}/sessions/${sessionId}/players`);
     const snap = await get(playerRef);
-    const used = Object.keys(snap.val() || {}).map(Number);
+    if (snap.exists() && !Object.values(snap.val()).includes(IP) && Object.keys(snap.val() || {}).length < game.info.playerAmount) {
+        const used = Object.keys(snap.val() || {}).map(Number);
 
-    let index = 0;
-    while (used.includes(index)) index++;
+        let index = 0;
+        while (used.includes(index)) index++;
 
-    await set(
-        ref(db, `games/${game.id}/sessions/${sessionId}/players/${index}`),
-        IP
-    );
+        await set(
+            ref(db, `games/${game.id}/sessions/${sessionId}/players/${index}`),
+            IP
+        );
 
-    const sessionRef = ref(db, `games/${game.id}/sessions/${sessionId}`);
+        const sessionRef = ref(db, `games/${game.id}/sessions/${sessionId}`);
 
-    onValue(sessionRef, snap => {
-        const session = snap.val();
-        if (!session) return;
+        onValue(sessionRef, snap => {
+            const session = snap.val();
+            if (!session) return;
 
-        if (
-            Object.keys(session.players || {}).length >= game.info.playerAmount &&
-            !session.started
-        ) {
-            set(ref(db, `games/${game.id}/sessions/${sessionId}/started`), true);
-        }
+            if (
+                Object.keys(session.players || {}).length >= game.info.playerAmount &&
+                !session.started
+            ) {
+                set(ref(db, `games/${game.id}/sessions/${sessionId}/started`), true);
+            }
 
-        if (session.started) {
-            console.log("Session gestartet:", sessionId);
-            // 👉 hier echte Game-Initialisierung
+            if (session.started) {
+                initGame(session);
+            }
+        });
+    }
+}
+const boardEl = document.getElementById("board");
+const cells = [...boardEl.querySelectorAll("button")];
+let myIndex = null;
+
+function initGame(session) {
+    boardEl.style.display = "grid";
+
+    // eigenen Spielerindex finden
+    for (const [i, ip] of Object.entries(session.players)) {
+        if (ip === IP) myIndex = Number(i);
+    }
+
+    // Initialisieren falls nicht vorhanden
+    if (!session.board) {
+        set(ref(db, `games/${game.id}/sessions/${sessionId}`), {
+            ...session,
+            board: Array(9).fill(""),
+            turn: 0,
+            winner: null
+        });
+    }
+
+    // Listener
+    onValue(ref(db, `games/${game.id}/sessions/${sessionId}`), snap => {
+        const s = snap.val();
+        if (!s) return;
+
+        renderBoard(s);
+
+        if (s.winner) {
+            alert(s.winner === myIndex ? "Du hast gewonnen" : "Du hast verloren");
         }
     });
 }
+
+function renderBoard(session) {
+    session.board.forEach((v, i) => {
+        cells[i].textContent = v;
+        cells[i].disabled =
+            v !== "" ||
+            session.turn !== myIndex ||
+            session.winner !== null;
+    });
+}
+cells.forEach(cell => {
+    cell.onclick = async () => {
+        const i = Number(cell.dataset.i);
+        const sessionRef = ref(db, `games/${game.id}/sessions/${sessionId}`);
+        const snap = await get(sessionRef);
+        const s = snap.val();
+
+        if (s.turn !== myIndex || s.board[i] !== "" || s.winner) return;
+
+        const symbol = myIndex === 0 ? "X" : "O";
+        s.board[i] = symbol;
+
+        const win = checkWin(s.board);
+        await set(sessionRef, {
+            ...s,
+            board: s.board,
+            turn: win ? s.turn : 1 - s.turn,
+            winner: win ? myIndex : null
+        });
+    };
+});
+function checkWin(b) {
+    const w = [
+        [0,1,2],[3,4,5],[6,7,8],
+        [0,3,6],[1,4,7],[2,5,8],
+        [0,4,8],[2,4,6]
+    ];
+    return w.some(([a,b1,c]) => b[a] && b[a] === b[b1] && b[a] === b[c]);
+}
+
 </script>
 
 

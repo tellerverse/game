@@ -96,6 +96,7 @@ if (myIndex === null && Object.keys(players).length < game.info.playerAmount) {
 const sessionRef = ref(db, `games/${game.id}/sessions/${sessionId}`);
 const boardEl = document.getElementById("board");
 const cells = [...boardEl.querySelectorAll("button")];
+let lastWinner = null;
 
 onValue(sessionRef, snap => {
     const s = snap.val();
@@ -110,9 +111,12 @@ onValue(sessionRef, snap => {
     boardEl.style.display = "grid";
 
     if (!s.board && myIndex === 0) {
-        set(ref(db, `games/${game.id}/sessions/${sessionId}/board`), Array(9).fill(""));
-        set(ref(db, `games/${game.id}/sessions/${sessionId}/turn`), 0);
-        set(ref(db, `games/${game.id}/sessions/${sessionId}/winner`), null);
+        set(ref(db, `games/${game.id}/sessions/${sessionId}`), {
+            ...s,
+            board: Array(9).fill(""),
+            turn: 0,
+            winner: null
+        });
         return;
     }
 
@@ -120,7 +124,8 @@ onValue(sessionRef, snap => {
 
     render(s);
 
-    if (s.winner !== null) {
+    if (s.winner !== null && lastWinner !== s.winner) {
+        lastWinner = s.winner;
         alert(
             s.winner === -1
                 ? "Unentschieden"

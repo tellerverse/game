@@ -90,7 +90,7 @@ if (!sessionId) {
 else {
     const playerRef = ref(db, `games/${game.id}/sessions/${sessionId}/players`);
     const snap = await get(playerRef);
-    if (snap.exists() && !Object.values(snap.val()).includes(IP) && Object.keys(snap.val() || {}).length < game.info.playerAmount) {
+    if (!snap.exists() || (!Object.values(snap.val()).includes(IP) && Object.keys(snap.val() || {}).length < game.info.playerAmount)) {
         const used = Object.keys(snap.val() || {}).map(Number);
 
         let index = 0;

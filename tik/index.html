@@ -38,8 +38,33 @@ const IP = await getIP();
 /* 🔴 FALL 1: KEINE SESSION → NEUE SESSION ERZEUGEN */
 if (!sessionId) {
     const sessionsRef = ref(db, `games/${game.id}/sessions`);
+    const snap = await get(sessionsRef);
 
-    // eindeutigen Key finden
+    let joinableSession = null;
+
+    if (snap.exists()) {
+        const sessions = snap.val();
+
+        for (const [key, session] of Object.entries(sessions)) {
+            const playerCount = Object.keys(session.players || {}).length;
+
+            if (
+                !session.started &&
+                playerCount < game.info.playerAmount
+            ) {
+                joinableSession = key;
+                break;
+            }
+        }
+    }
+
+    // ✅ Beitreten, wenn möglich
+    if (joinableSession) {
+        location.href = `?session=${joinableSession}`;
+        return;
+    }
+
+    // ❌ sonst neue Session erstellen
     let key;
     while (true) {
         key = generateGameKey();
@@ -54,6 +79,7 @@ if (!sessionId) {
 
     location.href = `?session=${key}`;
 }
+
 
 /* 🟢 FALL 2: SESSION EXISTIERT → SPIELER BEITRETEN */
 else {

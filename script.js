@@ -1,6 +1,6 @@
 import { ref, get, onValue } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
-import { db } from "../firebasedata.js";
-import { Tik, Sudoku, Ship, Find } from "../gameclasses.js";
+import { db } from "./firebasedata.js";
+import { Tik, Sudoku, Ship, Find } from "./gameclasses.js";
 
 export const games = {
     tik: new Tik,

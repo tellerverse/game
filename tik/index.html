@@ -1,201 +1,186 @@
 <!DOCTYPE html>
 <html lang="de">
-    <head>
-        <meta charset="UTF-8">
-        <title>game</title>
-        <link rel="stylesheet" href="../style.css">
-    </head>
-    <body>
-        <header class="banner large">
-            <h1>mor!tz sein<br><span style='font-size:1rem'>&lt;html></span>tiktaktoe<span style='font-size:1rem'>&lt;/html></span></h1>
-        </header>
-        <div class="loading"></div>
-        <div id="board" style="display:none;grid-template-columns:repeat(3,100px);gap:5px">
-          <button data-i="0"></button>
-          <button data-i="1"></button>
-          <button data-i="2"></button>
-          <button data-i="3"></button>
-          <button data-i="4"></button>
-          <button data-i="5"></button>
-          <button data-i="6"></button>
-          <button data-i="7"></button>
-          <button data-i="8"></button>
-        </div>
-        
+<head>
+    <meta charset="UTF-8">
+    <title>tic tac toe</title>
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<header class="banner large">
+    <h1>mor!tz sein<br><span style="font-size:1rem">&lt;html></span>tiktaktoe<span style="font-size:1rem">&lt;/html></span></h1>
+</header>
+
+<div class="loading"></div>
+
+<div id="board" style="display:none;grid-template-columns:repeat(3,100px);gap:5px">
+    <button data-i="0"></button>
+    <button data-i="1"></button>
+    <button data-i="2"></button>
+    <button data-i="3"></button>
+    <button data-i="4"></button>
+    <button data-i="5"></button>
+    <button data-i="6"></button>
+    <button data-i="7"></button>
+    <button data-i="8"></button>
+</div>
+
 <script type="module">
 import { Tik } from "../gameclasses.js";
 import { getIP } from "../utils.js";
-import { ref, onValue, set, get } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
+import { ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
 import { db } from "../firebasedata.js";
 
-function generateGameKey(length = 5) {
-    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-    let key = "";
-    for (let i = 0; i < length; i++) {
-        key += chars[Math.floor(Math.random() * chars.length)];
-    }
-    return key;
-}
-
-const params = new URLSearchParams(location.search);
-let sessionId = params.get("session");
+/* ---------- setup ---------- */
 
 const game = new Tik();
 await game.init();
 
 const IP = await getIP();
+const params = new URLSearchParams(location.search);
+let sessionId = params.get("session");
 
-/* 🔴 FALL 1: KEINE SESSION-ID → MATCHMAKING */
+function genKey(len = 5) {
+    const c = "abcdefghijklmnopqrstuvwxyz0123456789";
+    return Array.from({length: len}, () => c[Math.floor(Math.random()*c.length)]).join("");
+}
+
+/* ---------- matchmaking ---------- */
+
 if (!sessionId) {
-    const sessionsRef = ref(db, `games/${game.id}/sessions`);
-    const snap = await get(sessionsRef);
-
-    let joinableSession = null;
+    const snap = await get(ref(db, `games/${game.id}/sessions`));
+    let target = null;
 
     if (snap.exists()) {
-        const sessions = snap.val();
-
-        for (const [key, session] of Object.entries(sessions)) {
-            const playerCount = Object.keys(session.players || {}).length;
-
-            if (!session.started && playerCount < game.info.playerAmount) {
-                joinableSession = key;
+        for (const [id, s] of Object.entries(snap.val())) {
+            if (!s.started && Object.keys(s.players || {}).length < game.info.playerAmount) {
+                target = id;
                 break;
             }
         }
     }
 
-    if (joinableSession) {
-        // ✅ existierende Session nutzen
-        location.href = `?session=${joinableSession}`;
-    } else {
-        // ❌ keine freie → neue erstellen
-        let key;
-        while (true) {
-            key = generateGameKey();
-            const snap = await get(ref(db, `games/${game.id}/sessions/${key}`));
-            if (!snap.exists()) break;
-        }
+    if (!target) {
+        do { target = genKey(); }
+        while ((await get(ref(db, `games/${game.id}/sessions/${target}`))).exists());
 
-        await set(ref(db, `games/${game.id}/sessions/${key}`), {
+        await set(ref(db, `games/${game.id}/sessions/${target}`), {
             players: {},
             started: false
         });
-
-        location.href = `?session=${key}`;
     }
+
+    location.href = `?session=${target}`;
+    throw "redirect";
 }
 
-/* 🟢 FALL 2: SESSION EXISTIERT → SPIELER BEITRETEN */
-else {
-    const playerRef = ref(db, `games/${game.id}/sessions/${sessionId}/players`);
-    const snap = await get(playerRef);
-    if (!snap.exists() || (!Object.values(snap.val()).includes(IP) && Object.keys(snap.val() || {}).length < game.info.playerAmount)) {
-        const used = Object.keys(snap.val() || {}).map(Number);
+/* ---------- join ---------- */
 
-        let index = 0;
-        while (used.includes(index)) index++;
+const playersRef = ref(db, `games/${game.id}/sessions/${sessionId}/players`);
+const playersSnap = await get(playersRef);
 
-        await set(
-            ref(db, `games/${game.id}/sessions/${sessionId}/players/${index}`),
-            IP
-        );
+let myIndex = null;
+const players = playersSnap.val() || {};
 
-        const sessionRef = ref(db, `games/${game.id}/sessions/${sessionId}`);
-
-        onValue(sessionRef, snap => {
-            const session = snap.val();
-            if (!session) return;
-
-            if (
-                Object.keys(session.players || {}).length >= game.info.playerAmount &&
-                !session.started
-            ) {
-                set(ref(db, `games/${game.id}/sessions/${sessionId}/started`), true);
-            }
-
-            if (session.started) {
-                initGame(session);
-            }
-        });
-    }
+for (const [i, ip] of Object.entries(players)) {
+    if (ip === IP) myIndex = Number(i);
 }
+
+if (myIndex === null && Object.keys(players).length < game.info.playerAmount) {
+    myIndex = Object.keys(players).length;
+    await set(ref(db, `games/${game.id}/sessions/${sessionId}/players/${myIndex}`), IP);
+}
+
+/* ---------- game state ---------- */
+
+const sessionRef = ref(db, `games/${game.id}/sessions/${sessionId}`);
 const boardEl = document.getElementById("board");
 const cells = [...boardEl.querySelectorAll("button")];
-let myIndex = null;
 
-function initGame(session) {
+onValue(sessionRef, snap => {
+    const s = snap.val();
+    if (!s) return;
+
+    if (Object.keys(s.players || {}).length === game.info.playerAmount && !s.started) {
+        set(ref(db, `games/${game.id}/sessions/${sessionId}/started`), true);
+    }
+
+    if (!s.started) return;
+
     boardEl.style.display = "grid";
 
-    // eigenen Spielerindex finden
-    for (const [i, ip] of Object.entries(session.players)) {
-        if (ip === IP) myIndex = Number(i);
+    if (!s.board && myIndex === 0) {
+        set(ref(db, `games/${game.id}/sessions/${sessionId}/board`), Array(9).fill(""));
+        set(ref(db, `games/${game.id}/sessions/${sessionId}/turn`), 0);
+        set(ref(db, `games/${game.id}/sessions/${sessionId}/winner`), null);
+        return;
     }
 
-    // Initialisieren falls nicht vorhanden
-    if (!session.board) {
-        set(ref(db, `games/${game.id}/sessions/${sessionId}`), {
-            ...session,
-            board: Array(9).fill(""),
-            turn: 0,
-            winner: null
-        });
+    if (!s.board) return;
+
+    render(s);
+
+    if (s.winner !== null) {
+        alert(
+            s.winner === -1
+                ? "Unentschieden"
+                : s.winner === myIndex
+                ? "Du hast gewonnen"
+                : "Du hast verloren"
+        );
     }
+});
 
-    // Listener
-    onValue(ref(db, `games/${game.id}/sessions/${sessionId}`), snap => {
-        const s = snap.val();
-        if (!s) return;
+/* ---------- input ---------- */
 
-        renderBoard(s);
-
-        if (s.winner) {
-            alert(s.winner === myIndex ? "Du hast gewonnen" : "Du hast verloren");
-        }
-    });
-}
-
-function renderBoard(session) {
-    session.board.forEach((v, i) => {
-        cells[i].textContent = v;
-        cells[i].disabled =
-            v !== "" ||
-            session.turn !== myIndex ||
-            session.winner !== null;
-    });
-}
-cells.forEach(cell => {
-    cell.onclick = async () => {
-        const i = Number(cell.dataset.i);
-        const sessionRef = ref(db, `games/${game.id}/sessions/${sessionId}`);
+cells.forEach(btn => {
+    btn.onclick = async () => {
+        const i = Number(btn.dataset.i);
         const snap = await get(sessionRef);
         const s = snap.val();
 
-        if (s.turn !== myIndex || s.board[i] !== "" || s.winner) return;
+        if (
+            s.winner !== null ||
+            s.turn !== myIndex ||
+            s.board[i] !== ""
+        ) return;
 
         const symbol = myIndex === 0 ? "X" : "O";
-        s.board[i] = symbol;
+        const board = [...s.board];
+        board[i] = symbol;
 
-        const win = checkWin(s.board);
+        const win = checkWin(board);
+        const draw = !win && board.every(v => v !== "");
+
         await set(sessionRef, {
             ...s,
-            board: s.board,
-            turn: win ? s.turn : 1 - s.turn,
-            winner: win ? myIndex : null
+            board,
+            turn: win || draw ? s.turn : 1 - s.turn,
+            winner: win ? myIndex : draw ? -1 : null
         });
     };
 });
+
+/* ---------- helpers ---------- */
+
+function render(s) {
+    s.board.forEach((v, i) => {
+        cells[i].textContent = v;
+        cells[i].disabled =
+            v !== "" ||
+            s.turn !== myIndex ||
+            s.winner !== null;
+    });
+}
+
 function checkWin(b) {
-    const w = [
+    return [
         [0,1,2],[3,4,5],[6,7,8],
         [0,3,6],[1,4,7],[2,5,8],
         [0,4,8],[2,4,6]
-    ];
-    return w.some(([a,b1,c]) => b[a] && b[a] === b[b1] && b[a] === b[c]);
+    ].some(([a,b1,c]) => b[a] && b[a] === b[b1] && b[a] === b[c]);
 }
-
 </script>
-
 
 </body>
 </html>

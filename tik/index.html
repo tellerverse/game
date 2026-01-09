@@ -35,7 +35,7 @@ await game.init();
 
 const IP = await getIP();
 
-/* 🔴 FALL 1: KEINE SESSION → NEUE SESSION ERZEUGEN */
+/* 🔴 FALL 1: KEINE SESSION-ID → MATCHMAKING */
 if (!sessionId) {
     const sessionsRef = ref(db, `games/${game.id}/sessions`);
     const snap = await get(sessionsRef);
@@ -48,38 +48,33 @@ if (!sessionId) {
         for (const [key, session] of Object.entries(sessions)) {
             const playerCount = Object.keys(session.players || {}).length;
 
-            if (
-                !session.started &&
-                playerCount < game.info.playerAmount
-            ) {
+            if (!session.started && playerCount < game.info.playerAmount) {
                 joinableSession = key;
                 break;
             }
         }
     }
 
-    // ✅ Beitreten, wenn möglich
     if (joinableSession) {
+        // ✅ existierende Session nutzen
         location.href = `?session=${joinableSession}`;
-        return;
+    } else {
+        // ❌ keine freie → neue erstellen
+        let key;
+        while (true) {
+            key = generateGameKey();
+            const snap = await get(ref(db, `games/${game.id}/sessions/${key}`));
+            if (!snap.exists()) break;
+        }
+
+        await set(ref(db, `games/${game.id}/sessions/${key}`), {
+            players: {},
+            started: false
+        });
+
+        location.href = `?session=${key}`;
     }
-
-    // ❌ sonst neue Session erstellen
-    let key;
-    while (true) {
-        key = generateGameKey();
-        const snap = await get(ref(db, `games/${game.id}/sessions/${key}`));
-        if (!snap.exists()) break;
-    }
-
-    await set(ref(db, `games/${game.id}/sessions/${key}`), {
-        players: {},
-        started: false
-    });
-
-    location.href = `?session=${key}`;
 }
-
 
 /* 🟢 FALL 2: SESSION EXISTIERT → SPIELER BEITRETEN */
 else {
@@ -90,7 +85,10 @@ else {
     let index = 0;
     while (used.includes(index)) index++;
 
-    await set(ref(db, `games/${game.id}/sessions/${sessionId}/players/${index}`), IP);
+    await set(
+        ref(db, `games/${game.id}/sessions/${sessionId}/players/${index}`),
+        IP
+    );
 
     const sessionRef = ref(db, `games/${game.id}/sessions/${sessionId}`);
 
@@ -107,11 +105,12 @@ else {
 
         if (session.started) {
             console.log("Session gestartet:", sessionId);
-            // 👉 HIER echte Game-Initialisierung
+            // 👉 hier echte Game-Initialisierung
         }
     });
 }
 </script>
+
 
 </body>
 </html>

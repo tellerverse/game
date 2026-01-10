@@ -154,11 +154,12 @@ cells.forEach(btn => {
         console.log("altes board ", s.board);
         let board = s.board.split("");       // String → Array
         board[i] = myIndex === 0 ? "X" : "O";
-        board = board.join("");              // Array → String
-        console.log("neues board ", board);
 
         const win = checkWin(board);
         const draw = !win && board.every(v => v !== "-");
+
+        board = board.join("");              // Array → String
+        console.log("neues board ", board);
 
         await set(ref(db, `games/${game.id}/sessions/${sessionId}/board`), board);
         await set(ref(db, `games/${game.id}/sessions/${sessionId}/turn`),

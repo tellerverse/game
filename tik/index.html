@@ -149,12 +149,10 @@ cells.forEach(btn => {
         const snap = await get(sessionRef);
         const s = snap.val();
 
-        if (
-            !Array.isArray(s.board) ||
-            s.winner !== null ||
-            s.turn !== myIndex ||
-            s.board[i] !== ""
-        ) return;
+        if (!s?.board) return;
+        if (s.winner !== null) return;
+        if (s.turn !== myIndex) return;
+        if (s.board[i] !== "") return;
 
         const board = [...s.board];
         board[i] = myIndex === 0 ? "X" : "O";
@@ -162,14 +160,16 @@ cells.forEach(btn => {
         const win = checkWin(board);
         const draw = !win && board.every(v => v !== "");
 
-        await set(sessionRef, {
-            ...s,
-            board,
-            turn: win || draw ? s.turn : 1 - s.turn,
-            winner: win ? myIndex : draw ? -1 : null
-        });
+        await set(ref(db, `games/${game.id}/sessions/${sessionId}/board`), board);
+        await set(ref(db, `games/${game.id}/sessions/${sessionId}/turn`),
+            win || draw ? s.turn : 1 - s.turn
+        );
+        await set(ref(db, `games/${game.id}/sessions/${sessionId}/winner`),
+            win ? myIndex : draw ? -1 : null
+        );
     };
 });
+
 
 /* ================= HELPERS ================= */
 

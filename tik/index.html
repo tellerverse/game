@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>tic tac toe</title>
-    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="">
 </head>
 <body>
 
@@ -14,15 +14,15 @@
 <div class="loading"></div>
 
 <div id="board" style="display:none;grid-template-columns:repeat(3,100px);gap:5px">
-    <button data-i="0"></button>
-    <button data-i="1"></button>
-    <button data-i="2"></button>
-    <button data-i="3"></button>
-    <button data-i="4"></button>
-    <button data-i="5"></button>
-    <button data-i="6"></button>
-    <button data-i="7"></button>
-    <button data-i="8"></button>
+    <button data-i="0">hallo</button>
+    <button data-i="1">hallo</button>
+    <button data-i="2">hallo</button>
+    <button data-i="3">hallo</button>
+    <button data-i="4">hallo</button>
+    <button data-i="5">hallo</button>
+    <button data-i="6">hallo</button>
+    <button data-i="7">hallo</button>
+    <button data-i="8">hallo</button>
 </div>
 
 <script type="module">
@@ -113,7 +113,7 @@ onValue(sessionRef, snap => {
     if (!s.started) return;
 
     boardEl.style.display = "grid";
-
+    document.querySelector(".loading")?.remove();
     // init board ONCE by player 0
     if (!Array.isArray(s.board) && myIndex === 0) {
         set(ref(db, `games/${game.id}/sessions/${sessionId}/board`), Array(9).fill(""));
@@ -142,18 +142,23 @@ onValue(sessionRef, snap => {
 });
 
 /* ================= INPUT ================= */
-
+console.log(cells.length + " cells");
 cells.forEach(btn => {
+    console.log(btn);
     btn.onclick = async () => {
+        console.log(btn.textContent);
         const i = Number(btn.dataset.i);
         const snap = await get(sessionRef);
         const s = snap.val();
-
+        console.log(i);
         if (!s?.board) return;
-        if (s.winner !== null) return;
+        console.log(i);
+        if (s.winner != null) return;
+        console.log(i);
         if (s.turn !== myIndex) return;
+        console.log(i);
         if (s.board[i] !== "") return;
-
+        console.log(i);
         const board = [...s.board];
         board[i] = myIndex === 0 ? "X" : "O";
 
@@ -179,7 +184,7 @@ function render(s) {
         cells[i].disabled =
             v !== "" ||
             s.turn !== myIndex ||
-            s.winner !== null;
+            s.winner != null;
     });
 }
 

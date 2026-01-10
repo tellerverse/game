@@ -31,7 +31,7 @@ import { getIP } from "../utils.js";
 import { ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
 import { db } from "../firebasedata.js";
 
-/* ---------- setup ---------- */
+/* ================= SETUP ================= */
 
 const game = new Tik();
 await game.init();
@@ -42,10 +42,10 @@ let sessionId = params.get("session");
 
 function genKey(len = 5) {
     const c = "abcdefghijklmnopqrstuvwxyz0123456789";
-    return Array.from({length: len}, () => c[Math.floor(Math.random()*c.length)]).join("");
+    return Array.from({ length: len }, () => c[Math.floor(Math.random() * c.length)]).join("");
 }
 
-/* ---------- matchmaking ---------- */
+/* ================= MATCHMAKING ================= */
 
 if (!sessionId) {
     const snap = await get(ref(db, `games/${game.id}/sessions`));
@@ -66,7 +66,10 @@ if (!sessionId) {
 
         await set(ref(db, `games/${game.id}/sessions/${target}`), {
             players: {},
-            started: false
+            started: false,
+            board: null,
+            turn: 0,
+            winner: null
         });
     }
 
@@ -74,7 +77,7 @@ if (!sessionId) {
     throw "redirect";
 }
 
-/* ---------- join ---------- */
+/* ================= JOIN ================= */
 
 const playersRef = ref(db, `games/${game.id}/sessions/${sessionId}/players`);
 const playersSnap = await get(playersRef);
@@ -91,7 +94,7 @@ if (myIndex === null && Object.keys(players).length < game.info.playerAmount) {
     await set(ref(db, `games/${game.id}/sessions/${sessionId}/players/${myIndex}`), IP);
 }
 
-/* ---------- game state ---------- */
+/* ================= GAME ================= */
 
 const sessionRef = ref(db, `games/${game.id}/sessions/${sessionId}`);
 const boardEl = document.getElementById("board");
@@ -102,7 +105,8 @@ onValue(sessionRef, snap => {
     const s = snap.val();
     if (!s) return;
 
-    if (Object.keys(s.players || {}).length === game.info.playerAmount && !s.started) {
+    // start game
+    if (!s.started && Object.keys(s.players || {}).length === game.info.playerAmount) {
         set(ref(db, `games/${game.id}/sessions/${sessionId}/started`), true);
     }
 
@@ -110,21 +114,22 @@ onValue(sessionRef, snap => {
 
     boardEl.style.display = "grid";
 
-    if (!s.board && myIndex === 0) {
-        set(ref(db, `games/${game.id}/sessions/${sessionId}`), {
-            ...s,
-            board: Array(9).fill(""),
-            turn: 0,
-            winner: null
-        });
+    // init board ONCE by player 0
+    if (!Array.isArray(s.board) && myIndex === 0) {
+        set(ref(db, `games/${game.id}/sessions/${sessionId}/board`), Array(9).fill(""));
+        set(ref(db, `games/${game.id}/sessions/${sessionId}/turn`), 0);
+        set(ref(db, `games/${game.id}/sessions/${sessionId}/winner`), null);
         return;
     }
 
-    if (!s.board) return;
+    if (!Array.isArray(s.board)) return;
 
     render(s);
 
-    if (s.winner != null && lastWinner !== s.winner) {
+    if (
+        (s.winner === 0 || s.winner === 1 || s.winner === -1) &&
+        lastWinner !== s.winner
+    ) {
         lastWinner = s.winner;
         alert(
             s.winner === -1
@@ -136,7 +141,7 @@ onValue(sessionRef, snap => {
     }
 });
 
-/* ---------- input ---------- */
+/* ================= INPUT ================= */
 
 cells.forEach(btn => {
     btn.onclick = async () => {
@@ -145,14 +150,14 @@ cells.forEach(btn => {
         const s = snap.val();
 
         if (
+            !Array.isArray(s.board) ||
             s.winner !== null ||
             s.turn !== myIndex ||
             s.board[i] !== ""
         ) return;
 
-        const symbol = myIndex === 0 ? "X" : "O";
         const board = [...s.board];
-        board[i] = symbol;
+        board[i] = myIndex === 0 ? "X" : "O";
 
         const win = checkWin(board);
         const draw = !win && board.every(v => v !== "");
@@ -166,7 +171,7 @@ cells.forEach(btn => {
     };
 });
 
-/* ---------- helpers ---------- */
+/* ================= HELPERS ================= */
 
 function render(s) {
     s.board.forEach((v, i) => {
@@ -174,7 +179,7 @@ function render(s) {
         cells[i].disabled =
             v !== "" ||
             s.turn !== myIndex ||
-            s.winner != null;
+            s.winner !== null;
     });
 }
 

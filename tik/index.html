@@ -101,6 +101,7 @@ const boardEl = document.getElementById("board");
 const cells = [...boardEl.querySelectorAll("button")];
 let lastWinner = null;
 
+// onValue
 onValue(sessionRef, snap => {
     const s = snap.val();
     if (!s) return;
@@ -114,22 +115,23 @@ onValue(sessionRef, snap => {
 
     boardEl.style.display = "grid";
     document.querySelector(".loading")?.remove();
-    // init board ONCE by player 0
-    if ((s.board == null || s.board === "") && myIndex === 0) {
-        set(ref(db, `games/${game.id}/sessions/${sessionId}/board`), "---------");
-        set(ref(db, `games/${game.id}/sessions/${sessionId}/turn`), 0);
-        set(ref(db, `games/${game.id}/sessions/${sessionId}/winner`), null);
+
+    // init board nur einmal
+    if (!s.board || s.board.length !== 9) {
+        if (myIndex === 0) {
+            set(ref(db, `games/${game.id}/sessions/${sessionId}/board`), "---------");
+            set(ref(db, `games/${game.id}/sessions/${sessionId}/turn`), 0);
+            set(ref(db, `games/${game.id}/sessions/${sessionId}/winner`), null);
+        }
         return;
     }
 
-    if (!Array.isArray(s.board)) return;
-
+    // Board rendern
     render(s);
 
-    if (
-        (s.winner === 0 || s.winner === 1 || s.winner === -1) &&
-        lastWinner !== s.winner
-    ) {
+    // Winner alert
+    if ((s.winner === 0 || s.winner === 1 || s.winner === -1) &&
+        lastWinner !== s.winner) {
         lastWinner = s.winner;
         alert(
             s.winner === -1
@@ -140,6 +142,7 @@ onValue(sessionRef, snap => {
         );
     }
 });
+
 
 /* ================= INPUT ================= */
 cells.forEach(btn => {
@@ -154,12 +157,11 @@ cells.forEach(btn => {
         console.log("altes board ", s.board);
         let board = s.board.split("");       // String → Array
         board[i] = myIndex === 0 ? "X" : "O";
+        board = board.join("");              // Array → String
+        console.log("neues board ", board);
 
         const win = checkWin(board);
         const draw = !win && board.every(v => v !== "-");
-
-        board = board.join("");              // Array → String
-        console.log("neues board ", board);
 
         await set(ref(db, `games/${game.id}/sessions/${sessionId}/board`), board);
         await set(ref(db, `games/${game.id}/sessions/${sessionId}/turn`),
@@ -182,13 +184,19 @@ function render(s) {
     });
 }
 
-function checkWin(b) {
-    return [
+function checkWin(board) {
+    const b = board.split(""); // String → Array
+    const wins = [
         [0,1,2],[3,4,5],[6,7,8],
         [0,3,6],[1,4,7],[2,5,8],
         [0,4,8],[2,4,6]
-    ].some(([a,b1,c]) => b[a] && b[a] === b[b1] && b[a] === b[c]);
+    ];
+    
+    return wins.some(([a,b1,c]) => 
+        b[a] !== "-" && b[a] === b[b1] && b[a] === b[c]
+    );
 }
+
 </script>
 
 </body>

@@ -150,14 +150,14 @@ cells.forEach(btn => {
         if (!s?.board) return;
         if (s.winner != null) return;
         if (s.turn !== myIndex) return;
-        if (s.board[i] !== "") return;
+        if (s.board[i] == "X" || s.board[i] == "O") return; // hier fix
+
         let board = s.board.split("");       // String → Array
         board[i] = myIndex === 0 ? "X" : "O";
         board = board.join("");              // Array → String
-        await set(ref(db, `games/${game.id}/sessions/${sessionId}/board`), board);
 
         const win = checkWin(board);
-        const draw = !win && board.every(v => v !== "");
+        const draw = !win && board.every(v => v !== "-");
 
         await set(ref(db, `games/${game.id}/sessions/${sessionId}/board`), board);
         await set(ref(db, `games/${game.id}/sessions/${sessionId}/turn`),
@@ -168,6 +168,7 @@ cells.forEach(btn => {
         );
     };
 });
+
 
 
 /* ================= HELPERS ================= */

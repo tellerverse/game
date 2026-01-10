@@ -116,7 +116,7 @@ onValue(sessionRef, snap => {
     document.querySelector(".loading")?.remove();
     // init board ONCE by player 0
     if (!Array.isArray(s.board) && myIndex === 0) {
-        set(ref(db, `games/${game.id}/sessions/${sessionId}/board`), Array(9).fill(""));
+        set(ref(db, `games/${game.id}/sessions/${sessionId}/board`), "---------");
         set(ref(db, `games/${game.id}/sessions/${sessionId}/turn`), 0);
         set(ref(db, `games/${game.id}/sessions/${sessionId}/winner`), null);
         return;
@@ -142,25 +142,19 @@ onValue(sessionRef, snap => {
 });
 
 /* ================= INPUT ================= */
-console.log(cells.length + " cells");
 cells.forEach(btn => {
-    console.log(btn);
     btn.onclick = async () => {
-        console.log(btn.textContent);
         const i = Number(btn.dataset.i);
         const snap = await get(sessionRef);
         const s = snap.val();
-        console.log(i);
         if (!s?.board) return;
-        console.log(i);
         if (s.winner != null) return;
-        console.log(i);
         if (s.turn !== myIndex) return;
-        console.log(i);
         if (s.board[i] !== "") return;
-        console.log(i);
-        const board = [...s.board];
+        let board = s.board.split("");       // String → Array
         board[i] = myIndex === 0 ? "X" : "O";
+        board = board.join("");              // Array → String
+        await set(ref(db, `games/${game.id}/sessions/${sessionId}/board`), board);
 
         const win = checkWin(board);
         const draw = !win && board.every(v => v !== "");
@@ -179,12 +173,9 @@ cells.forEach(btn => {
 /* ================= HELPERS ================= */
 
 function render(s) {
-    s.board.forEach((v, i) => {
-        cells[i].textContent = v;
-        cells[i].disabled =
-            v !== "" ||
-            s.turn !== myIndex ||
-            s.winner != null;
+    s.board.split("").forEach((v, i) => {
+        cells[i].textContent = v === "-" ? "" : v;
+        cells[i].disabled = v !== "-" || s.turn !== myIndex || s.winner != null;
     });
 }
 

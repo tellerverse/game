@@ -161,7 +161,7 @@ cells.forEach(btn => {
         console.log("neues board ", board);
 
         const win = checkWin(board);
-        const draw = !win && board.every(v => v !== "-");
+        const draw = !win && board.split("").every(v => v !== "-");
 
         await set(ref(db, `games/${game.id}/sessions/${sessionId}/board`), board);
         await set(ref(db, `games/${game.id}/sessions/${sessionId}/turn`),

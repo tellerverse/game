@@ -115,7 +115,7 @@ onValue(sessionRef, snap => {
     boardEl.style.display = "grid";
     document.querySelector(".loading")?.remove();
     // init board ONCE by player 0
-    if (!Array.isArray(s.board) && myIndex === 0) {
+    if ((s.board == null || s.board === "") && myIndex === 0) {
         set(ref(db, `games/${game.id}/sessions/${sessionId}/board`), "---------");
         set(ref(db, `games/${game.id}/sessions/${sessionId}/turn`), 0);
         set(ref(db, `games/${game.id}/sessions/${sessionId}/winner`), null);
@@ -151,10 +151,11 @@ cells.forEach(btn => {
         if (s.winner != null) return;
         if (s.turn !== myIndex) return;
         if (s.board[i] == "X" || s.board[i] == "O") return; // hier fix
-
+        console.log("altes board ", s.board);
         let board = s.board.split("");       // String → Array
         board[i] = myIndex === 0 ? "X" : "O";
         board = board.join("");              // Array → String
+        console.log("neues board ", board);
 
         const win = checkWin(board);
         const draw = !win && board.every(v => v !== "-");
@@ -176,7 +177,7 @@ cells.forEach(btn => {
 function render(s) {
     s.board.split("").forEach((v, i) => {
         cells[i].textContent = v === "-" ? "" : v;
-        cells[i].disabled = v !== "-" || s.turn !== myIndex || s.winner != null;
+        cells[i].disabled = v == "X" || v == "O" || s.turn !== myIndex || s.winner != null;
     });
 }
 

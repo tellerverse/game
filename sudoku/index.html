@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Sudoku Multiplayer</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: sans-serif;
+    background: #0e0e11;
+    color: white;
+    text-align: center;
+}
+
+header {
+    padding: 20px;
+    font-size: 2rem;
+    font-weight: 800;
+}
+
+#loading {
+    font-size: 1.5rem;
+    margin-top: 80px;
+}
+
+#board {
+    display: none;
+    margin: 40px auto;
+    width: 360px;
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    gap: 2px;
+}
+
+.cell {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    background: #1f1f28;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+.cell.fixed {
+    background: #111;
+    cursor: default;
+}
+
+.cell:hover:not(.fixed) {
+    background: #2f2f3a;
+}
+
+.subgrid-right { border-right: 3px solid #555; }
+.subgrid-bottom { border-bottom: 3px solid #555; }
+</style>
+</head>
+
+<body>
+
+<header>Multiplayer Sudoku</header>
+<div id="loading">Warte auf Spieler…</div>
+<div id="board"></div>
+
+<script type="module">
+import { ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
+import { db } from "../firebasedata.js";
+import { getIP } from "../utils.js";
+
+/* ================== UTIL ================== */
+
+function genKey(len = 5) {
+    const c = "abcdefghijklmnopqrstuvwxyz0123456789";
+    return Array.from({length:len},()=>c[Math.floor(Math.random()*c.length)]).join("");
+}
+
+/* ================== SUDOKU ================== */
+
+function generateSudoku() {
+    const base = 3, side = 9;
+    const pattern = (r,c)=> (base*(r%base)+Math.floor(r/base)+c)%side;
+    const shuffle = a => a.sort(()=>Math.random()-0.5);
+
+    const rBase = [0,1,2];
+    const rows = shuffle(rBase.flatMap(g=>shuffle(rBase).map(r=>g*3+r)));
+    const cols = shuffle(rBase.flatMap(g=>shuffle(rBase).map(c=>g*3+c)));
+    const nums = shuffle([1,2,3,4,5,6,7,8,9]);
+
+    const solution = rows.map(r =>
+        cols.map(c => nums[pattern(r,c)]).join("")
+    ).join("");
+
+    let puzzle = solution.split("");
+    let holes = 45;
+    while (holes--) {
+        puzzle[Math.floor(Math.random()*81)] = "0";
+    }
+
+    return { puzzle: puzzle.join(""), solution };
+}
+
+/* ================== MATCHMAKING ================== */
+
+const IP = await getIP();
+const params = new URLSearchParams(location.search);
+let session = params.get("session");
+const GAME_PATH = "games/sudoku/sessions";
+
+if (!session) {
+    const snap = await get(ref(db, GAME_PATH));
+    let target = null;
+
+    if (snap.exists()) {
+        for (const [id,s] of Object.entries(snap.val())) {
+            if (!s.started && Object.keys(s.players||{}).length < 2) {
+                target = id;
+                break;
+            }
+        }
+    }
+
+    if (!target) {
+        do target = genKey();
+        while ((await get(ref(db, `${GAME_PATH}/${target}`))).exists());
+
+        await set(ref(db, `${GAME_PATH}/${target}`), {
+            players:{},
+            started:false,
+            winner:null
+        });
+    }
+
+    location.href = `?session=${target}`;
+    throw "redirect";
+}
+
+/* ================== JOIN ================== */
+
+const sessionRef = ref(db, `${GAME_PATH}/${session}`);
+const snap = await get(sessionRef);
+const data = snap.val();
+
+let myIndex = null;
+const players = data.players || {};
+
+for (const [i,ip] of Object.entries(players)) {
+    if (ip === IP) myIndex = +i;
+}
+
+if (myIndex === null && Object.keys(players).length < 2) {
+    myIndex = Object.keys(players).length;
+    await set(ref(db, `${GAME_PATH}/${session}/players/${myIndex}`), IP);
+}
+
+/* ================== UI ================== */
+
+const boardEl = document.getElementById("board");
+const loadingEl = document.getElementById("loading");
+const cells = [];
+
+for (let i=0;i<81;i++) {
+    const b = document.createElement("button");
+    b.className = "cell";
+    if (i%3===2 && i%9!==8) b.classList.add("subgrid-right");
+    if (Math.floor(i/9)%3===2 && i<72) b.classList.add("subgrid-bottom");
+    b.dataset.i = i;
+    boardEl.appendChild(b);
+    cells.push(b);
+}
+
+/* ================== GAME LOOP ================== */
+
+let lastWinner = null;
+
+onValue(sessionRef, async snap => {
+    const s = snap.val();
+    if (!s) return;
+
+    if (!s.started && Object.keys(s.players||{}).length === 2) {
+        await set(ref(db, `${GAME_PATH}/${session}/started`), true);
+    }
+
+    if (!s.started) return;
+
+    loadingEl.style.display = "none";
+    boardEl.style.display = "grid";
+
+    if (!s.puzzle && myIndex === 0) {
+        const g = generateSudoku();
+        await set(ref(db, `${GAME_PATH}/${session}/puzzle`), g.puzzle);
+        await set(ref(db, `${GAME_PATH}/${session}/solution`), g.solution);
+        await set(ref(db, `${GAME_PATH}/${session}/boards`), {
+            0: g.puzzle,
+            1: g.puzzle
+        });
+        return;
+    }
+
+    if (!s.boards) return;
+    render(s);
+
+    if (s.winner !== null && lastWinner !== s.winner) {
+        lastWinner = s.winner;
+        alert(s.winner === myIndex ? "Du hast gewonnen" : "Du hast verloren");
+    }
+});
+
+/* ================== INPUT ================== */
+
+cells.forEach(btn=>{
+    btn.onclick = async ()=>{
+        const i = +btn.dataset.i;
+        const snap = await get(sessionRef);
+        const s = snap.val();
+
+        if (s.winner !== null) return;
+        if (s.puzzle[i] !== "0") return;
+
+        const val = prompt("Zahl 1–9:");
+        if (!/^[1-9]$/.test(val)) return;
+
+        let board = s.boards[myIndex].split("");
+        board[i] = val;
+        board = board.join("");
+
+        await set(ref(db, `${GAME_PATH}/${session}/boards/${myIndex}`), board);
+
+        if (board === s.solution) {
+            await set(ref(db, `${GAME_PATH}/${session}/winner`), myIndex);
+        }
+    };
+});
+
+/* ================== RENDER ================== */
+
+function render(s){
+    const board = s.boards[myIndex];
+    board.split("").forEach((v,i)=>{
+        cells[i].textContent = v==="0" ? "" : v;
+        cells[i].classList.toggle("fixed", s.puzzle[i] !== "0");
+    });
+}
+</script>
+</body>
+</html>

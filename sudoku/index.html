@@ -71,6 +71,12 @@ import { getIP } from "../utils.js";
 
 /* ================== UTIL ================== */
 
+function nextValue(v) {
+    if (v === "0") return "1";
+    if (v === "9") return "0";
+    return String(Number(v) + 1);
+}
+
 function genKey(len = 5) {
     const c = "abcdefghijklmnopqrstuvwxyz0123456789";
     return Array.from({length:len},()=>c[Math.floor(Math.random()*c.length)]).join("");
@@ -79,27 +85,109 @@ function genKey(len = 5) {
 /* ================== SUDOKU ================== */
 
 function generateSudoku() {
-    const base = 3, side = 9;
-    const pattern = (r,c)=> (base*(r%base)+Math.floor(r/base)+c)%side;
-    const shuffle = a => a.sort(()=>Math.random()-0.5);
+    const SIZE = 9;
+    const EMPTY = 0;
 
-    const rBase = [0,1,2];
-    const rows = shuffle(rBase.flatMap(g=>shuffle(rBase).map(r=>g*3+r)));
-    const cols = shuffle(rBase.flatMap(g=>shuffle(rBase).map(c=>g*3+c)));
-    const nums = shuffle([1,2,3,4,5,6,7,8,9]);
+    /* ---------- Helpers ---------- */
 
-    const solution = rows.map(r =>
-        cols.map(c => nums[pattern(r,c)]).join("")
-    ).join("");
-
-    let puzzle = solution.split("");
-    let holes = 45;
-    while (holes--) {
-        puzzle[Math.floor(Math.random()*81)] = "0";
+    function shuffle(arr) {
+        return arr.sort(() => Math.random() - 0.5);
     }
 
-    return { puzzle: puzzle.join(""), solution };
+    function isValid(board, row, col, num) {
+        for (let i = 0; i < 9; i++) {
+            if (board[row][i] === num) return false;
+            if (board[i][col] === num) return false;
+        }
+
+        const br = Math.floor(row / 3) * 3;
+        const bc = Math.floor(col / 3) * 3;
+
+        for (let r = 0; r < 3; r++) {
+            for (let c = 0; c < 3; c++) {
+                if (board[br + r][bc + c] === num) return false;
+            }
+        }
+        return true;
+    }
+
+    /* ---------- Full Board Generator ---------- */
+
+    function fillBoard(board) {
+        for (let r = 0; r < 9; r++) {
+            for (let c = 0; c < 9; c++) {
+                if (board[r][c] === EMPTY) {
+                    for (const n of shuffle([1,2,3,4,5,6,7,8,9])) {
+                        if (isValid(board, r, c, n)) {
+                            board[r][c] = n;
+                            if (fillBoard(board)) return true;
+                            board[r][c] = EMPTY;
+                        }
+                    }
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /* ---------- Solution Counter ---------- */
+
+    function countSolutions(board, limit = 2) {
+        let count = 0;
+
+        function solve() {
+            for (let r = 0; r < 9; r++) {
+                for (let c = 0; c < 9; c++) {
+                    if (board[r][c] === EMPTY) {
+                        for (let n = 1; n <= 9; n++) {
+                            if (isValid(board, r, c, n)) {
+                                board[r][c] = n;
+                                solve();
+                                board[r][c] = EMPTY;
+                                if (count >= limit) return;
+                            }
+                        }
+                        return;
+                    }
+                }
+            }
+            count++;
+        }
+
+        solve();
+        return count;
+    }
+
+    /* ---------- Generate ---------- */
+
+    let board = Array.from({ length: 9 }, () => Array(9).fill(EMPTY));
+    fillBoard(board);
+
+    const solution = board.flat().join("");
+
+    let puzzle = board.map(r => r.slice());
+    let positions = shuffle([...Array(81).keys()]);
+
+    for (const pos of positions) {
+        const r = Math.floor(pos / 9);
+        const c = pos % 9;
+        const backup = puzzle[r][c];
+
+        puzzle[r][c] = EMPTY;
+
+        const copy = puzzle.map(row => row.slice());
+        if (countSolutions(copy) !== 1) {
+            puzzle[r][c] = backup; // rollback
+        }
+    }
+
+    return {
+        puzzle: puzzle.flat().join(""),
+        solution
+    };
 }
+
 
 /* ================== MATCHMAKING ================== */
 
@@ -201,7 +289,7 @@ onValue(sessionRef, async snap => {
     if (!s.boards) return;
     render(s);
 
-    if (s.winner !== null && lastWinner !== s.winner) {
+    if (s.winner != null && lastWinner !== s.winner) {
         lastWinner = s.winner;
         alert(s.winner === myIndex ? "Du hast gewonnen" : "Du hast verloren");
     }
@@ -209,36 +297,45 @@ onValue(sessionRef, async snap => {
 
 /* ================== INPUT ================== */
 
-cells.forEach(btn=>{
-    btn.onclick = async ()=>{
+cells.forEach(btn => {
+    btn.onclick = async () => {
         const i = +btn.dataset.i;
         const snap = await get(sessionRef);
         const s = snap.val();
 
-        if (s.winner !== null) return;
+        if (!s) return;
+        if (s.winner != null) return;
+
+        // feste Sudoku-Zellen blockieren
         if (s.puzzle[i] !== "0") return;
 
-        const val = prompt("Zahl 1–9:");
-        if (!/^[1-9]$/.test(val)) return;
-
         let board = s.boards[myIndex].split("");
-        board[i] = val;
+        board[i] = nextValue(board[i]);
         board = board.join("");
 
-        await set(ref(db, `${GAME_PATH}/${session}/boards/${myIndex}`), board);
+        await set(
+            ref(db, `${GAME_PATH}/${session}/boards/${myIndex}`),
+            board
+        );
 
+        // Gewinn prüfen
         if (board === s.solution) {
-            await set(ref(db, `${GAME_PATH}/${session}/winner`), myIndex);
+            await set(
+                ref(db, `${GAME_PATH}/${session}/winner`),
+                myIndex
+            );
         }
     };
 });
 
+
 /* ================== RENDER ================== */
 
-function render(s){
+function render(s) {
     const board = s.boards[myIndex];
-    board.split("").forEach((v,i)=>{
-        cells[i].textContent = v==="0" ? "" : v;
+
+    board.split("").forEach((v, i) => {
+        cells[i].textContent = v === "0" ? "" : v;
         cells[i].classList.toggle("fixed", s.puzzle[i] !== "0");
     });
 }

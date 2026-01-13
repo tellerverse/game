@@ -1,344 +1,365 @@
 <!DOCTYPE html>
 <html lang="de">
-<head>
-<meta charset="UTF-8">
-<title>Sudoku Multiplayer</title>
+    <head>
+        <meta charset="UTF-8">
+        <title>sudoku</title>
+        <link rel="stylesheet" href="../style.css">
+        <style>
 
-<style>
-body {
-    margin: 0;
-    font-family: sans-serif;
-    background: #0e0e11;
-    color: white;
-    text-align: center;
-}
-
-header {
-    padding: 20px;
-    font-size: 2rem;
-    font-weight: 800;
-}
-
-#loading {
-    font-size: 1.5rem;
-    margin-top: 80px;
-}
-
-#board {
-    display: none;
-    margin: 40px auto;
-    width: 360px;
-    display: grid;
-    grid-template-columns: repeat(9, 1fr);
-    gap: 2px;
-}
-
-.cell {
-    width: 40px;
-    height: 40px;
-    font-size: 1.2rem;
-    font-weight: 700;
-    background: #1f1f28;
-    color: white;
-    border: none;
-    cursor: pointer;
-}
-
-.cell.fixed {
-    background: #111;
-    cursor: default;
-}
-
-.cell:hover:not(.fixed) {
-    background: #2f2f3a;
-}
-
-.subgrid-right { border-right: 3px solid #555; }
-.subgrid-bottom { border-bottom: 3px solid #555; }
-</style>
-</head>
-
-<body>
-
-<header>Multiplayer Sudoku</header>
-<div id="loading">Warte auf Spieler…</div>
-<div id="board"></div>
-
-<script type="module">
-import { ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
-import { db } from "../firebasedata.js";
-import { getIP } from "../utils.js";
-
-/* ================== UTIL ================== */
-
-function nextValue(v) {
-    if (v === "0") return "1";
-    if (v === "9") return "0";
-    return String(Number(v) + 1);
-}
-
-function genKey(len = 5) {
-    const c = "abcdefghijklmnopqrstuvwxyz0123456789";
-    return Array.from({length:len},()=>c[Math.floor(Math.random()*c.length)]).join("");
-}
-
-/* ================== SUDOKU ================== */
-
-function generateSudoku() {
-    const SIZE = 9;
-    const EMPTY = 0;
-
-    /* ---------- Helpers ---------- */
-
-    function shuffle(arr) {
-        return arr.sort(() => Math.random() - 0.5);
-    }
-
-    function isValid(board, row, col, num) {
-        for (let i = 0; i < 9; i++) {
-            if (board[row][i] === num) return false;
-            if (board[i][col] === num) return false;
-        }
-
-        const br = Math.floor(row / 3) * 3;
-        const bc = Math.floor(col / 3) * 3;
-
-        for (let r = 0; r < 3; r++) {
-            for (let c = 0; c < 3; c++) {
-                if (board[br + r][bc + c] === num) return false;
+            #board {
+                display: none;
+                margin: 40px auto;
+                width: 360px;
+                grid-template-columns: repeat(9, 1fr);
+                gap: 2px;
             }
-        }
-        return true;
-    }
 
-    /* ---------- Full Board Generator ---------- */
+            .cell {
+                width: 40px;
+                height: 40px;
 
-    function fillBoard(board) {
-        for (let r = 0; r < 9; r++) {
-            for (let c = 0; c < 9; c++) {
-                if (board[r][c] === EMPTY) {
-                    for (const n of shuffle([1,2,3,4,5,6,7,8,9])) {
-                        if (isValid(board, r, c, n)) {
-                            board[r][c] = n;
-                            if (fillBoard(board)) return true;
-                            board[r][c] = EMPTY;
-                        }
-                    }
-                    return false;
+                font-family: 'Burbank';
+                font-size: 1.4rem;
+                font-weight: 700;
+
+                color: #fff;
+
+                background: linear-gradient(
+                    145deg,
+                    #0088dc,
+                    #ff30dc,
+                    #22cbdc,
+                    #ff7fca
+                );
+                background-size: 400% 400%;
+
+                border: none;
+                border-radius: 10px;
+
+                cursor: pointer;
+
+                transition: all 0.25s ease;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.35);
+                text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            }
+
+            .cell:hover:not(.fixed) {
+                transform: scale(1.08);
+                background-position: 100% 100%;
+            }
+
+            .cell.fixed {
+                background: #0c0c12;
+                color: rgba(255,255,255,0.6);
+                cursor: default;
+                box-shadow: inset 0 0 0 2px rgba(255,255,255,0.05);
+                transform: none;
+            }
+
+            .subgrid-right {
+                box-shadow: inset -3px 0 0 rgba(255,255,255,0.15);
+            }
+
+            .subgrid-bottom {
+                box-shadow: inset 0 -3px 0 rgba(255,255,255,0.15);
+            }
+
+            @media (max-width: 600px) {
+                #board {
+                    width: 300px;
+                    gap: 4px;
+                }
+
+                .cell {
+                    width: 32px;
+                    height: 32px;
+                    font-size: 1.1rem;
                 }
             }
-        }
-        return true;
-    }
+        </style>
+    </head>
+    <body>
+        <header class="banner large">
+            <h1>mor!tz sein<br><span style="font-size:1rem">&lt;html></span>sudoku<span style="font-size:1rem">&lt;/html></span></h1>
+        </header>
+        <div class="loading">warte auf spieler</div>
+        <div id="board"></div>
 
-    /* ---------- Solution Counter ---------- */
+        <script type="module">
+            import { ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
+            import { db } from "../firebasedata.js";
+            import { getIP } from "../utils.js";
 
-    function countSolutions(board, limit = 2) {
-        let count = 0;
+            /* ================== UTIL ================== */
 
-        function solve() {
-            for (let r = 0; r < 9; r++) {
-                for (let c = 0; c < 9; c++) {
-                    if (board[r][c] === EMPTY) {
-                        for (let n = 1; n <= 9; n++) {
-                            if (isValid(board, r, c, n)) {
-                                board[r][c] = n;
-                                solve();
-                                board[r][c] = EMPTY;
-                                if (count >= limit) return;
+            function nextValue(v) {
+                if (v === "0") return "1";
+                if (v === "9") return "0";
+                return String(Number(v) + 1);
+            }
+
+            function genKey(len = 5) {
+                const c = "abcdefghijklmnopqrstuvwxyz0123456789";
+                return Array.from({length:len},()=>c[Math.floor(Math.random()*c.length)]).join("");
+            }
+
+            /* ================== SUDOKU ================== */
+
+            function generateSudoku() {
+                const SIZE = 9;
+                const EMPTY = 0;
+
+                /* ---------- Helpers ---------- */
+
+                function shuffle(arr) {
+                    return arr.sort(() => Math.random() - 0.5);
+                }
+
+                function isValid(board, row, col, num) {
+                    for (let i = 0; i < 9; i++) {
+                        if (board[row][i] === num) return false;
+                        if (board[i][col] === num) return false;
+                    }
+
+                    const br = Math.floor(row / 3) * 3;
+                    const bc = Math.floor(col / 3) * 3;
+
+                    for (let r = 0; r < 3; r++) {
+                        for (let c = 0; c < 3; c++) {
+                            if (board[br + r][bc + c] === num) return false;
+                        }
+                    }
+                    return true;
+                }
+
+                /* ---------- Full Board Generator ---------- */
+
+                function fillBoard(board) {
+                    for (let r = 0; r < 9; r++) {
+                        for (let c = 0; c < 9; c++) {
+                            if (board[r][c] === EMPTY) {
+                                for (const n of shuffle([1,2,3,4,5,6,7,8,9])) {
+                                    if (isValid(board, r, c, n)) {
+                                        board[r][c] = n;
+                                        if (fillBoard(board)) return true;
+                                        board[r][c] = EMPTY;
+                                    }
+                                }
+                                return false;
                             }
                         }
-                        return;
+                    }
+                    return true;
+                }
+
+                /* ---------- Solution Counter ---------- */
+
+                function countSolutions(board, limit = 2) {
+                    let count = 0;
+
+                    function solve() {
+                        for (let r = 0; r < 9; r++) {
+                            for (let c = 0; c < 9; c++) {
+                                if (board[r][c] === EMPTY) {
+                                    for (let n = 1; n <= 9; n++) {
+                                        if (isValid(board, r, c, n)) {
+                                            board[r][c] = n;
+                                            solve();
+                                            board[r][c] = EMPTY;
+                                            if (count >= limit) return;
+                                        }
+                                    }
+                                    return;
+                                }
+                            }
+                        }
+                        count++;
+                    }
+
+                    solve();
+                    return count;
+                }
+
+                /* ---------- Generate ---------- */
+
+                let board = Array.from({ length: 9 }, () => Array(9).fill(EMPTY));
+                fillBoard(board);
+
+                const solution = board.flat().join("");
+
+                let puzzle = board.map(r => r.slice());
+                let positions = shuffle([...Array(81).keys()]);
+
+                for (const pos of positions) {
+                    const r = Math.floor(pos / 9);
+                    const c = pos % 9;
+                    const backup = puzzle[r][c];
+
+                    puzzle[r][c] = EMPTY;
+
+                    const copy = puzzle.map(row => row.slice());
+                    if (countSolutions(copy) !== 1) {
+                        puzzle[r][c] = backup; // rollback
                     }
                 }
+
+                return {
+                    puzzle: puzzle.flat().join(""),
+                    solution
+                };
             }
-            count++;
-        }
-
-        solve();
-        return count;
-    }
-
-    /* ---------- Generate ---------- */
-
-    let board = Array.from({ length: 9 }, () => Array(9).fill(EMPTY));
-    fillBoard(board);
-
-    const solution = board.flat().join("");
-
-    let puzzle = board.map(r => r.slice());
-    let positions = shuffle([...Array(81).keys()]);
-
-    for (const pos of positions) {
-        const r = Math.floor(pos / 9);
-        const c = pos % 9;
-        const backup = puzzle[r][c];
-
-        puzzle[r][c] = EMPTY;
-
-        const copy = puzzle.map(row => row.slice());
-        if (countSolutions(copy) !== 1) {
-            puzzle[r][c] = backup; // rollback
-        }
-    }
-
-    return {
-        puzzle: puzzle.flat().join(""),
-        solution
-    };
-}
 
 
-/* ================== MATCHMAKING ================== */
+            /* ================== MATCHMAKING ================== */
 
-const IP = await getIP();
-const params = new URLSearchParams(location.search);
-let session = params.get("session");
-const GAME_PATH = "games/sudoku/sessions";
+            const IP = await getIP();
+            const params = new URLSearchParams(location.search);
+            let session = params.get("session");
+            const GAME_PATH = "games/sudoku/sessions";
 
-if (!session) {
-    const snap = await get(ref(db, GAME_PATH));
-    let target = null;
+            if (!session) {
+                const snap = await get(ref(db, GAME_PATH));
+                let target = null;
 
-    if (snap.exists()) {
-        for (const [id,s] of Object.entries(snap.val())) {
-            if (!s.started && Object.keys(s.players||{}).length < 2) {
-                target = id;
-                break;
+                if (snap.exists()) {
+                    for (const [id,s] of Object.entries(snap.val())) {
+                        if (!s.started && Object.keys(s.players||{}).length < 2) {
+                            target = id;
+                            break;
+                        }
+                    }
+                }
+
+                if (!target) {
+                    do target = genKey();
+                    while ((await get(ref(db, `${GAME_PATH}/${target}`))).exists());
+
+                    await set(ref(db, `${GAME_PATH}/${target}`), {
+                        players:{},
+                        started:false,
+                        winner:null
+                    });
+                }
+
+                location.href = `?session=${target}`;
+                throw "redirect";
             }
-        }
-    }
 
-    if (!target) {
-        do target = genKey();
-        while ((await get(ref(db, `${GAME_PATH}/${target}`))).exists());
+            /* ================== JOIN ================== */
 
-        await set(ref(db, `${GAME_PATH}/${target}`), {
-            players:{},
-            started:false,
-            winner:null
-        });
-    }
+            const sessionRef = ref(db, `${GAME_PATH}/${session}`);
+            const snap = await get(sessionRef);
+            const data = snap.val();
 
-    location.href = `?session=${target}`;
-    throw "redirect";
-}
+            let myIndex = null;
+            const players = data.players || {};
 
-/* ================== JOIN ================== */
+            for (const [i,ip] of Object.entries(players)) {
+                if (ip === IP) myIndex = +i;
+            }
 
-const sessionRef = ref(db, `${GAME_PATH}/${session}`);
-const snap = await get(sessionRef);
-const data = snap.val();
+            if (myIndex === null && Object.keys(players).length < 2) {
+                myIndex = Object.keys(players).length;
+                await set(ref(db, `${GAME_PATH}/${session}/players/${myIndex}`), IP);
+            }
 
-let myIndex = null;
-const players = data.players || {};
+            /* ================== UI ================== */
 
-for (const [i,ip] of Object.entries(players)) {
-    if (ip === IP) myIndex = +i;
-}
+            const boardEl = document.getElementById("board");
+            const loadingEl = document.querySelector(".loading");
+            const cells = [];
 
-if (myIndex === null && Object.keys(players).length < 2) {
-    myIndex = Object.keys(players).length;
-    await set(ref(db, `${GAME_PATH}/${session}/players/${myIndex}`), IP);
-}
+            for (let i=0;i<81;i++) {
+                const b = document.createElement("button");
+                b.className = "cell";
+                if (i%3===2 && i%9!==8) b.classList.add("subgrid-right");
+                if (Math.floor(i/9)%3===2 && i<72) b.classList.add("subgrid-bottom");
+                b.dataset.i = i;
+                boardEl.appendChild(b);
+                cells.push(b);
+            }
 
-/* ================== UI ================== */
+            /* ================== GAME LOOP ================== */
 
-const boardEl = document.getElementById("board");
-const loadingEl = document.getElementById("loading");
-const cells = [];
+            let lastWinner = null;
 
-for (let i=0;i<81;i++) {
-    const b = document.createElement("button");
-    b.className = "cell";
-    if (i%3===2 && i%9!==8) b.classList.add("subgrid-right");
-    if (Math.floor(i/9)%3===2 && i<72) b.classList.add("subgrid-bottom");
-    b.dataset.i = i;
-    boardEl.appendChild(b);
-    cells.push(b);
-}
+            onValue(sessionRef, async snap => {
+                const s = snap.val();
+                if (!s) return;
 
-/* ================== GAME LOOP ================== */
+                if (!s.started && Object.keys(s.players||{}).length === 2) {
+                    await set(ref(db, `${GAME_PATH}/${session}/started`), true);
+                }
 
-let lastWinner = null;
+                if (!s.started) return;
 
-onValue(sessionRef, async snap => {
-    const s = snap.val();
-    if (!s) return;
+                loadingEl.style.display = "none";
+                boardEl.style.display = "grid";
 
-    if (!s.started && Object.keys(s.players||{}).length === 2) {
-        await set(ref(db, `${GAME_PATH}/${session}/started`), true);
-    }
+                if (!s.puzzle && myIndex === 0) {
+                    const g = generateSudoku();
+                    await set(ref(db, `${GAME_PATH}/${session}/puzzle`), g.puzzle);
+                    await set(ref(db, `${GAME_PATH}/${session}/solution`), g.solution);
+                    await set(ref(db, `${GAME_PATH}/${session}/boards`), {
+                        0: g.puzzle,
+                        1: g.puzzle
+                    });
+                    return;
+                }
 
-    if (!s.started) return;
+                if (!s.boards) return;
+                render(s);
 
-    loadingEl.style.display = "none";
-    boardEl.style.display = "grid";
+                if (s.winner != null && lastWinner !== s.winner) {
+                    lastWinner = s.winner;
+                    alert(s.winner === myIndex ? "Du hast gewonnen" : "Du hast verloren");
+                }
+            });
 
-    if (!s.puzzle && myIndex === 0) {
-        const g = generateSudoku();
-        await set(ref(db, `${GAME_PATH}/${session}/puzzle`), g.puzzle);
-        await set(ref(db, `${GAME_PATH}/${session}/solution`), g.solution);
-        await set(ref(db, `${GAME_PATH}/${session}/boards`), {
-            0: g.puzzle,
-            1: g.puzzle
-        });
-        return;
-    }
+            /* ================== INPUT ================== */
 
-    if (!s.boards) return;
-    render(s);
+            cells.forEach(btn => {
+                btn.onclick = async () => {
+                    const i = +btn.dataset.i;
+                    const snap = await get(sessionRef);
+                    const s = snap.val();
 
-    if (s.winner != null && lastWinner !== s.winner) {
-        lastWinner = s.winner;
-        alert(s.winner === myIndex ? "Du hast gewonnen" : "Du hast verloren");
-    }
-});
+                    if (!s) return;
+                    if (s.winner != null) return;
 
-/* ================== INPUT ================== */
+                    // feste Sudoku-Zellen blockieren
+                    if (s.puzzle[i] !== "0") return;
 
-cells.forEach(btn => {
-    btn.onclick = async () => {
-        const i = +btn.dataset.i;
-        const snap = await get(sessionRef);
-        const s = snap.val();
+                    let board = s.boards[myIndex].split("");
+                    board[i] = nextValue(board[i]);
+                    board = board.join("");
 
-        if (!s) return;
-        if (s.winner != null) return;
+                    await set(
+                        ref(db, `${GAME_PATH}/${session}/boards/${myIndex}`),
+                        board
+                    );
 
-        // feste Sudoku-Zellen blockieren
-        if (s.puzzle[i] !== "0") return;
-
-        let board = s.boards[myIndex].split("");
-        board[i] = nextValue(board[i]);
-        board = board.join("");
-
-        await set(
-            ref(db, `${GAME_PATH}/${session}/boards/${myIndex}`),
-            board
-        );
-
-        // Gewinn prüfen
-        if (board === s.solution) {
-            await set(
-                ref(db, `${GAME_PATH}/${session}/winner`),
-                myIndex
-            );
-        }
-    };
-});
+                    // Gewinn prüfen
+                    if (board === s.solution) {
+                        await set(
+                            ref(db, `${GAME_PATH}/${session}/winner`),
+                            myIndex
+                        );
+                    }
+                };
+            });
 
 
-/* ================== RENDER ================== */
+            /* ================== RENDER ================== */
 
-function render(s) {
-    const board = s.boards[myIndex];
+            function render(s) {
+                const board = s.boards[myIndex];
 
-    board.split("").forEach((v, i) => {
-        cells[i].textContent = v === "0" ? "" : v;
-        cells[i].classList.toggle("fixed", s.puzzle[i] !== "0");
-    });
-}
-</script>
-</body>
+                board.split("").forEach((v, i) => {
+                    cells[i].textContent = v === "0" ? "" : v;
+                    cells[i].classList.toggle("fixed", s.puzzle[i] !== "0");
+                });
+            }
+        </script>
+    </body>
 </html>

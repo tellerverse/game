@@ -5,47 +5,6 @@
     <title>tic tac toe</title>
     <link rel="stylesheet" href="../style.css">
     <style>
-        .loading {
-            font-size: 2rem;
-            font-weight: 800;
-            text-align: center;
-            padding: 100px;
-            background: linear-gradient(
-                180deg,
-                #0088dc,
-                #22cbdc,
-                #ff7fca,
-                #ff30dc
-            );
-
-            background-size: 100% 400%;
-            animation: loadingShift 12s ease infinite;
-
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-
-        @keyframes loadingShift {
-            0%   { background-position: 0% 0%; }
-            50%  { background-position: 0% 100%; }
-            100% { background-position: 0% 0%; }
-        }
-
-        .loading::after {
-            content: '';
-            display: inline-block;
-            width: 1ch;
-            text-align: left;
-            animation: dots 1s steps(3, end) infinite;
-        }
-
-        @keyframes dots {
-            0% { content: ''; }
-            33% { content: '.'; }
-            66% { content: '..'; }
-            100% { content: '...'; }
-        }
         
         #board {
             display: grid;
@@ -93,7 +52,7 @@
     <h1>mor!tz sein<br><span style="font-size:1rem">&lt;html></span>tiktaktoe<span style="font-size:1rem">&lt;/html></span></h1>
 </header>
 
-<div class="loading"></div>
+<div class="loading">warte auf spieler</div>
 
 <div id="board" style="display:none;grid-template-columns:repeat(3,100px);gap:5px">
     <button data-i="0">hallo</button>

@@ -13,12 +13,13 @@
 
                 width: min(92vw, 360px);
                 aspect-ratio: 1 / 1;
+                font-size: calc(100% / 9); /* 🔥 MAGIC */
 
                 display: grid;
                 grid-template-columns: repeat(9, 1fr);
                 gap: 2px;
             }
-
+            
             .cell {
                 width: 100%;
                 aspect-ratio: 1 / 1;
@@ -28,7 +29,7 @@
                 justify-content: center;
 
                 font-family: 'Burbank';
-                font-size: clamp(1rem, 4vw, 1.4rem);
+                font-size: 12em;;
                 font-weight: 700;
 
                 color: #ffffff;
@@ -67,7 +68,8 @@
                 /* background-position: 100% 100%; */
                 color: #ffff66;
                 text-shadow: 1px 1px 3px rgb(255, 255, 255);
-                font-size: clamp(1.05rem, 4.2vw, 1.47rem);
+                font-size: 15em;
+
             }
 
             @keyframes denied {

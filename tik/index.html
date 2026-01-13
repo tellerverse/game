@@ -21,27 +21,42 @@
                 font-size: 2.5rem;
                 font-weight: 700;
                 color: #fff;
-                background: linear-gradient(145deg, #0088dc, #ff30dc, #22cbdc, #ff7fca);
-                background-size: 400% 400%;
+                background: linear-gradient(
+                    145deg,
+                    #0088dc,
+                    #9ed8ff,
+                    #87cfff,
+                    #87cfff
+                );
+                /* background-size: 400% 400%; */
                 border: none;
                 border-radius: 12px;
                 cursor: pointer;
                 transition: all 0.3s ease;
+                transition: border none;
                 box-shadow: 0 4px 8px rgba(0,0,0,0.3);
                 text-shadow: 0 1px 2px rgba(0,0,0,0.5);
                 font-family: 'Burbank', sans-serif;
             }
 
             #board button:hover:not(:disabled) {
-                transform: scale(1.08);
-                background-position: 100% 100%;
+                /* transform: scale(1.08); */
+                /* background-position: 100% 100%; */
+                border: 5px solid #fff;
+
             }
 
             #board button:disabled {
-                opacity: 0.4;
+                /* opacity: 0.4; */
                 cursor: not-allowed;
                 box-shadow: none;
-                background: #222;
+                background: linear-gradient(
+                    145deg,
+                    #005183,
+                    #6c94ae,
+                    #4d7692,
+                    #4d7692
+                );
                 color: rgba(255,255,255,0.5);
             }
 
@@ -56,15 +71,21 @@
         <div class="loading">warte auf spieler</div>
 
         <div id="board" style="display:none;grid-template-columns:repeat(3,100px);gap:5px">
-            <button data-i="0">hallo</button>
-            <button data-i="1">hallo</button>
-            <button data-i="2">hallo</button>
-            <button data-i="3">hallo</button>
-            <button data-i="4">hallo</button>
-            <button data-i="5">hallo</button>
-            <button data-i="6">hallo</button>
-            <button data-i="7">hallo</button>
-            <button data-i="8">hallo</button>
+            <button data-i="0"> </button>
+            <button data-i="1"> </button>
+            <button data-i="2"> </button>
+            <button data-i="3"> </button>
+            <button data-i="4"> </button>
+            <button data-i="5"> </button>
+            <button data-i="6"> </button>
+            <button data-i="7"> </button>
+            <button data-i="8"> </button>
+        </div>
+
+        <div id="endScreen" style="display:none;text-align:center;margin-top:30px">
+            <h2 id="endText"></h2>
+            <button id="replayBtn">Replay</button>
+            <p id="replayInfo"></p>
         </div>
 
         <script type="module">
@@ -111,7 +132,8 @@
                         started: false,
                         board: null,
                         turn: 0,
-                        winner: null
+                        winner: null,
+                        replay: { 0: false, 1: false }
                     });
                 }
 
@@ -141,50 +163,60 @@
             const sessionRef = ref(db, `games/${game.id}/sessions/${sessionId}`);
             const boardEl = document.getElementById("board");
             const cells = [...boardEl.querySelectorAll("button")];
-            let lastWinner = null;
+        
+            // Winner alert
+            const endScreen = document.getElementById("endScreen");
+            const endText = document.getElementById("endText");
+            const replayBtn = document.getElementById("replayBtn");
+            const replayInfo = document.getElementById("replayInfo");
 
-            // onValue
-            onValue(sessionRef, snap => {
+            // Replay-Button nur einmal binden
+            replayBtn.onclick = async () => {
+                await set(ref(db, `games/${game.id}/sessions/${sessionId}/replay/${myIndex}`), true);
+            };
+
+            // **Ein einziger Listener für Session-Updates**
+            onValue(sessionRef, async snap => {
                 const s = snap.val();
-                if (!s) return;
-
-                // start game
-                if (!s.started && Object.keys(s.players || {}).length === game.info.playerAmount) {
-                    set(ref(db, `games/${game.id}/sessions/${sessionId}/started`), true);
-                }
-
-                if (!s.started) return;
-
-                boardEl.style.display = "grid";
-                document.querySelector(".loading")?.remove();
-
-                // init board nur einmal
-                if (!s.board || s.board.length !== 9) {
-                    if (myIndex === 0) {
-                        set(ref(db, `games/${game.id}/sessions/${sessionId}/board`), "---------");
-                        set(ref(db, `games/${game.id}/sessions/${sessionId}/turn`), 0);
-                        set(ref(db, `games/${game.id}/sessions/${sessionId}/winner`), null);
-                    }
-                    return;
-                }
+                if (!s || !s.board) return;
 
                 // Board rendern
                 render(s);
 
-                // Winner alert
-                if ((s.winner === 0 || s.winner === 1 || s.winner === -1) &&
-                    lastWinner !== s.winner) {
-                    lastWinner = s.winner;
-                    alert(
+                // Winner / Endscreen
+                if (s.winner !== null) {
+                    endScreen.style.display = "block";
+                    endText.textContent =
                         s.winner === -1
                             ? "Unentschieden"
                             : s.winner === myIndex
                             ? "Du hast gewonnen"
-                            : "Du hast verloren"
-                    );
+                            : "Du hast verloren";
+
+                    const myReplay = s.replay?.[myIndex];
+                    const enemyReplay = s.replay?.[1 - myIndex];
+
+                    replayBtn.style.display = myReplay ? "none" : "inline-block";
+                    replayInfo.textContent =
+                        myReplay && !enemyReplay
+                            ? "Warten auf Gegner…"
+                            : enemyReplay && !myReplay
+                            ? "Rival wants to play again"
+                            : "";
+                } else {
+                    endScreen.style.display = "none";
+                }
+
+                // Restart nur Player 0
+                if (s.replay?.[0] && s.replay?.[1] && myIndex === 0) {
+                    await set(ref(db, `games/${game.id}/sessions/${sessionId}/board`), "---------");
+                    await set(ref(db, `games/${game.id}/sessions/${sessionId}/turn`), 0);
+                    await set(ref(db, `games/${game.id}/sessions/${sessionId}/winner`), null);
+                    await set(ref(db, `games/${game.id}/sessions/${sessionId}/replay`), {0:false,1:false});
                 }
             });
 
+            
 
             /* ================= INPUT ================= */
             cells.forEach(btn => {

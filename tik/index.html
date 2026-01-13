@@ -1,244 +1,243 @@
 <!DOCTYPE html>
 <html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <title>tic tac toe</title>
-    <link rel="stylesheet" href="../style.css">
-    <style>
-        
-        #board {
-            display: grid;
-            grid-template-columns: repeat(3, 100px);
-            gap: 10px;
-            justify-content: center;
-            margin-top: 50px;
-        }
-
-        #board button {
-            width: 100px;
-            height: 100px;
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: #fff;
-            background: linear-gradient(145deg, #0088dc, #ff30dc, #22cbdc, #ff7fca);
-            background-size: 400% 400%;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-            font-family: 'Burbank', sans-serif;
-        }
-
-        #board button:hover:not(:disabled) {
-            transform: scale(1.08);
-            background-position: 100% 100%;
-        }
-
-        #board button:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-            box-shadow: none;
-            background: #222;
-            color: rgba(255,255,255,0.5);
-        }
-
-    </style>
-</head>
-<body>
-
-<header class="banner large">
-    <h1>mor!tz sein<br><span style="font-size:1rem">&lt;html></span>tiktaktoe<span style="font-size:1rem">&lt;/html></span></h1>
-</header>
-
-<div class="loading">warte auf spieler</div>
-
-<div id="board" style="display:none;grid-template-columns:repeat(3,100px);gap:5px">
-    <button data-i="0">hallo</button>
-    <button data-i="1">hallo</button>
-    <button data-i="2">hallo</button>
-    <button data-i="3">hallo</button>
-    <button data-i="4">hallo</button>
-    <button data-i="5">hallo</button>
-    <button data-i="6">hallo</button>
-    <button data-i="7">hallo</button>
-    <button data-i="8">hallo</button>
-</div>
-
-<script type="module">
-import { Tik } from "../gameclasses.js";
-import { getIP } from "../utils.js";
-import { ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
-import { db } from "../firebasedata.js";
-
-/* ================= SETUP ================= */
-
-const game = new Tik();
-await game.init();
-
-const IP = await getIP();
-const params = new URLSearchParams(location.search);
-let sessionId = params.get("session");
-
-function genKey(len = 5) {
-    const c = "abcdefghijklmnopqrstuvwxyz0123456789";
-    return Array.from({ length: len }, () => c[Math.floor(Math.random() * c.length)]).join("");
-}
-
-/* ================= MATCHMAKING ================= */
-
-if (!sessionId) {
-    const snap = await get(ref(db, `games/${game.id}/sessions`));
-    let target = null;
-
-    if (snap.exists()) {
-        for (const [id, s] of Object.entries(snap.val())) {
-            if (!s.started && Object.keys(s.players || {}).length < game.info.playerAmount) {
-                target = id;
-                break;
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>tic tac toe</title>
+        <link rel="stylesheet" href="../style.css">
+        <style>
+            
+            #board {
+                display: grid;
+                grid-template-columns: repeat(3, 100px);
+                gap: 10px;
+                justify-content: center;
+                margin-top: 50px;
             }
-        }
-    }
 
-    if (!target) {
-        do { target = genKey(); }
-        while ((await get(ref(db, `games/${game.id}/sessions/${target}`))).exists());
+            #board button {
+                width: 100px;
+                height: 100px;
+                font-size: 2.5rem;
+                font-weight: 700;
+                color: #fff;
+                background: linear-gradient(145deg, #0088dc, #ff30dc, #22cbdc, #ff7fca);
+                background-size: 400% 400%;
+                border: none;
+                border-radius: 12px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+                text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+                font-family: 'Burbank', sans-serif;
+            }
 
-        await set(ref(db, `games/${game.id}/sessions/${target}`), {
-            players: {},
-            started: false,
-            board: null,
-            turn: 0,
-            winner: null
-        });
-    }
+            #board button:hover:not(:disabled) {
+                transform: scale(1.08);
+                background-position: 100% 100%;
+            }
 
-    location.href = `?session=${target}`;
-    throw "redirect";
-}
+            #board button:disabled {
+                opacity: 0.4;
+                cursor: not-allowed;
+                box-shadow: none;
+                background: #222;
+                color: rgba(255,255,255,0.5);
+            }
 
-/* ================= JOIN ================= */
+        </style>
+    </head>
+    <body>
 
-const playersRef = ref(db, `games/${game.id}/sessions/${sessionId}/players`);
-const playersSnap = await get(playersRef);
+        <header class="banner large">
+            <h1>mor!tz sein<br><span style="font-size:1rem">&lt;html></span>tiktaktoe<span style="font-size:1rem">&lt;/html></span></h1>
+        </header>
 
-let myIndex = null;
-const players = playersSnap.val() || {};
+        <div class="loading">warte auf spieler</div>
 
-for (const [i, ip] of Object.entries(players)) {
-    if (ip === IP) myIndex = Number(i);
-}
+        <div id="board" style="display:none;grid-template-columns:repeat(3,100px);gap:5px">
+            <button data-i="0">hallo</button>
+            <button data-i="1">hallo</button>
+            <button data-i="2">hallo</button>
+            <button data-i="3">hallo</button>
+            <button data-i="4">hallo</button>
+            <button data-i="5">hallo</button>
+            <button data-i="6">hallo</button>
+            <button data-i="7">hallo</button>
+            <button data-i="8">hallo</button>
+        </div>
 
-if (myIndex === null && Object.keys(players).length < game.info.playerAmount) {
-    myIndex = Object.keys(players).length;
-    await set(ref(db, `games/${game.id}/sessions/${sessionId}/players/${myIndex}`), IP);
-}
+        <script type="module">
+            import { Tik } from "../gameclasses.js";
+            import { getIP } from "../utils.js";
+            import { ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
+            import { db } from "../firebasedata.js";
 
-/* ================= GAME ================= */
+            /* ================= SETUP ================= */
 
-const sessionRef = ref(db, `games/${game.id}/sessions/${sessionId}`);
-const boardEl = document.getElementById("board");
-const cells = [...boardEl.querySelectorAll("button")];
-let lastWinner = null;
+            const game = new Tik();
+            await game.init();
 
-// onValue
-onValue(sessionRef, snap => {
-    const s = snap.val();
-    if (!s) return;
+            const IP = await getIP();
+            const params = new URLSearchParams(location.search);
+            let sessionId = params.get("session");
 
-    // start game
-    if (!s.started && Object.keys(s.players || {}).length === game.info.playerAmount) {
-        set(ref(db, `games/${game.id}/sessions/${sessionId}/started`), true);
-    }
+            function genKey(len = 5) {
+                const c = "abcdefghijklmnopqrstuvwxyz0123456789";
+                return Array.from({ length: len }, () => c[Math.floor(Math.random() * c.length)]).join("");
+            }
 
-    if (!s.started) return;
+            /* ================= MATCHMAKING ================= */
 
-    boardEl.style.display = "grid";
-    document.querySelector(".loading")?.remove();
+            if (!sessionId) {
+                const snap = await get(ref(db, `games/${game.id}/sessions`));
+                let target = null;
 
-    // init board nur einmal
-    if (!s.board || s.board.length !== 9) {
-        if (myIndex === 0) {
-            set(ref(db, `games/${game.id}/sessions/${sessionId}/board`), "---------");
-            set(ref(db, `games/${game.id}/sessions/${sessionId}/turn`), 0);
-            set(ref(db, `games/${game.id}/sessions/${sessionId}/winner`), null);
-        }
-        return;
-    }
+                if (snap.exists()) {
+                    for (const [id, s] of Object.entries(snap.val())) {
+                        if (!s.started && Object.keys(s.players || {}).length < game.info.playerAmount) {
+                            target = id;
+                            break;
+                        }
+                    }
+                }
 
-    // Board rendern
-    render(s);
+                if (!target) {
+                    do { target = genKey(); }
+                    while ((await get(ref(db, `games/${game.id}/sessions/${target}`))).exists());
 
-    // Winner alert
-    if ((s.winner === 0 || s.winner === 1 || s.winner === -1) &&
-        lastWinner !== s.winner) {
-        lastWinner = s.winner;
-        alert(
-            s.winner === -1
-                ? "Unentschieden"
-                : s.winner === myIndex
-                ? "Du hast gewonnen"
-                : "Du hast verloren"
-        );
-    }
-});
+                    await set(ref(db, `games/${game.id}/sessions/${target}`), {
+                        players: {},
+                        started: false,
+                        board: null,
+                        turn: 0,
+                        winner: null
+                    });
+                }
+
+                location.href = `?session=${target}`;
+                throw "redirect";
+            }
+
+            /* ================= JOIN ================= */
+
+            const playersRef = ref(db, `games/${game.id}/sessions/${sessionId}/players`);
+            const playersSnap = await get(playersRef);
+
+            let myIndex = null;
+            const players = playersSnap.val() || {};
+
+            for (const [i, ip] of Object.entries(players)) {
+                if (ip === IP) myIndex = Number(i);
+            }
+
+            if (myIndex === null && Object.keys(players).length < game.info.playerAmount) {
+                myIndex = Object.keys(players).length;
+                await set(ref(db, `games/${game.id}/sessions/${sessionId}/players/${myIndex}`), IP);
+            }
+
+            /* ================= GAME ================= */
+
+            const sessionRef = ref(db, `games/${game.id}/sessions/${sessionId}`);
+            const boardEl = document.getElementById("board");
+            const cells = [...boardEl.querySelectorAll("button")];
+            let lastWinner = null;
+
+            // onValue
+            onValue(sessionRef, snap => {
+                const s = snap.val();
+                if (!s) return;
+
+                // start game
+                if (!s.started && Object.keys(s.players || {}).length === game.info.playerAmount) {
+                    set(ref(db, `games/${game.id}/sessions/${sessionId}/started`), true);
+                }
+
+                if (!s.started) return;
+
+                boardEl.style.display = "grid";
+                document.querySelector(".loading")?.remove();
+
+                // init board nur einmal
+                if (!s.board || s.board.length !== 9) {
+                    if (myIndex === 0) {
+                        set(ref(db, `games/${game.id}/sessions/${sessionId}/board`), "---------");
+                        set(ref(db, `games/${game.id}/sessions/${sessionId}/turn`), 0);
+                        set(ref(db, `games/${game.id}/sessions/${sessionId}/winner`), null);
+                    }
+                    return;
+                }
+
+                // Board rendern
+                render(s);
+
+                // Winner alert
+                if ((s.winner === 0 || s.winner === 1 || s.winner === -1) &&
+                    lastWinner !== s.winner) {
+                    lastWinner = s.winner;
+                    alert(
+                        s.winner === -1
+                            ? "Unentschieden"
+                            : s.winner === myIndex
+                            ? "Du hast gewonnen"
+                            : "Du hast verloren"
+                    );
+                }
+            });
 
 
-/* ================= INPUT ================= */
-cells.forEach(btn => {
-    btn.onclick = async () => {
-        const i = Number(btn.dataset.i);
-        const snap = await get(sessionRef);
-        const s = snap.val();
-        if (!s?.board) return;
-        if (s.winner != null) return;
-        if (s.turn !== myIndex) return;
-        if (s.board[i] == "X" || s.board[i] == "O") return; // hier fix
-        console.log("altes board ", s.board);
-        let board = s.board.split("");       // String → Array
-        board[i] = myIndex === 0 ? "X" : "O";
-        board = board.join("");              // Array → String
-        console.log("neues board ", board);
+            /* ================= INPUT ================= */
+            cells.forEach(btn => {
+                btn.onclick = async () => {
+                    const i = Number(btn.dataset.i);
+                    const snap = await get(sessionRef);
+                    const s = snap.val();
+                    if (!s?.board) return;
+                    if (s.winner != null) return;
+                    if (s.turn !== myIndex) return;
+                    if (s.board[i] == "X" || s.board[i] == "O") return; // hier fix
+                    console.log("altes board ", s.board);
+                    let board = s.board.split("");       // String → Array
+                    board[i] = myIndex === 0 ? "X" : "O";
+                    board = board.join("");              // Array → String
+                    console.log("neues board ", board);
 
-        const win = checkWin(board);
-        const draw = !win && board.split("").every(v => v !== "-");
+                    const win = checkWin(board);
+                    const draw = !win && board.split("").every(v => v !== "-");
 
-        await set(ref(db, `games/${game.id}/sessions/${sessionId}/board`), board);
-        await set(ref(db, `games/${game.id}/sessions/${sessionId}/turn`),
-            win || draw ? s.turn : 1 - s.turn
-        );
-        await set(ref(db, `games/${game.id}/sessions/${sessionId}/winner`),
-            win ? myIndex : draw ? -1 : null
-        );
-    };
-});
+                    await set(ref(db, `games/${game.id}/sessions/${sessionId}/board`), board);
+                    await set(ref(db, `games/${game.id}/sessions/${sessionId}/turn`),
+                        win || draw ? s.turn : 1 - s.turn
+                    );
+                    await set(ref(db, `games/${game.id}/sessions/${sessionId}/winner`),
+                        win ? myIndex : draw ? -1 : null
+                    );
+                };
+            });
 
 
 
-/* ================= HELPERS ================= */
+            /* ================= HELPERS ================= */
 
-function render(s) {
-    s.board.split("").forEach((v, i) => {
-        cells[i].textContent = v === "-" ? "" : v;
-        cells[i].disabled = v == "X" || v == "O" || s.turn !== myIndex || s.winner != null;
-    });
-}
+            function render(s) {
+                s.board.split("").forEach((v, i) => {
+                    cells[i].textContent = v === "-" ? "" : v;
+                    cells[i].disabled = v == "X" || v == "O" || s.turn !== myIndex || s.winner != null;
+                });
+            }
 
-function checkWin(board) {
-    const b = board.split(""); // String → Array
-    const wins = [
-        [0,1,2],[3,4,5],[6,7,8],
-        [0,3,6],[1,4,7],[2,5,8],
-        [0,4,8],[2,4,6]
-    ];
-    
-    return wins.some(([a,b1,c]) => 
-        b[a] !== "-" && b[a] === b[b1] && b[a] === b[c]
-    );
-}
-
-</script>
-
-</body>
+            function checkWin(board) {
+                const b = board.split(""); // String → Array
+                const wins = [
+                    [0,1,2],[3,4,5],[6,7,8],
+                    [0,3,6],[1,4,7],[2,5,8],
+                    [0,4,8],[2,4,6]
+                ];
+                
+                return wins.some(([a,b1,c]) => 
+                    b[a] !== "-" && b[a] === b[b1] && b[a] === b[c]
+                );
+            }
+        </script>
+    </body>
 </html>

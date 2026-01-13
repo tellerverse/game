@@ -1,273 +1,206 @@
 <!DOCTYPE html>
 <html lang="de">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>tic tac toe</title>
-        <link rel="stylesheet" href="../style.css">
-        <style>
-            
-            #board {
-                display: grid;
-                grid-template-columns: repeat(3, 100px);
-                gap: 10px;
-                justify-content: center;
-                margin-top: 50px;
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tic Tac Toe</title>
+    <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<header class="banner large">
+    <h1>mor!tz<br><span style="font-size:1rem">&lt;html&gt;</span>tiktaktoe<span style="font-size:1rem">&lt;/html&gt;</span></h1>
+</header>
+
+<div class="loading">warte auf spieler…</div>
+
+<div id="board" style="display:none;grid-template-columns:repeat(3,100px);gap:5px">
+    <button data-i="0"></button>
+    <button data-i="1"></button>
+    <button data-i="2"></button>
+    <button data-i="3"></button>
+    <button data-i="4"></button>
+    <button data-i="5"></button>
+    <button data-i="6"></button>
+    <button data-i="7"></button>
+    <button data-i="8"></button>
+</div>
+
+<div id="endScreen" style="display:none;text-align:center;margin-top:30px">
+    <h2 id="endText"></h2>
+    <button onclick="location.reload()">Replay</button>
+</div>
+
+<script type="module">
+import { ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
+import { db } from "../firebasedata.js";
+import { getIP } from "../utils.js";
+
+/* ================= SETUP ================= */
+
+const IP = await getIP();
+const GAME_PATH = "games/tik";
+const PLAYER_COUNT = 2;
+
+const params = new URLSearchParams(location.search);
+let sessionId = params.get("session");
+
+function genKey(len = 5) {
+    const c = "abcdefghijklmnopqrstuvwxyz0123456789";
+    return Array.from({ length: len }, () => c[Math.floor(Math.random() * c.length)]).join("");
+}
+
+/* ================= MATCHMAKING ================= */
+
+if (!sessionId) {
+    const snap = await get(ref(db, `${GAME_PATH}/sessions`));
+    let target = null;
+
+    if (snap.exists()) {
+        for (const [id, s] of Object.entries(snap.val())) {
+            if (!s.started && Object.keys(s.players || {}).length < PLAYER_COUNT) {
+                target = id;
+                break;
             }
-/* liksdjf */
-            #board button {
-                width: 100px;
-                height: 100px;
-                font-size: 2.5rem;
-                font-weight: 700;
-                color: #fff;
-                background: linear-gradient(
-                    145deg,
-                    #0088dc,
-                    #9ed8ff,
-                    #87cfff,
-                    #87cfff
-                );
-                /* background-size: 400% 400%; */
-                border: none;
-                border-radius: 12px;
-                cursor: pointer;
-                transition: all 0.3s ease;
-                transition: border none;
-                box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-                text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-                font-family: 'Burbank', sans-serif;
-            }
+        }
+    }
 
-            #board button:hover:not(:disabled) {
-                /* transform: scale(1.08); */
-                /* background-position: 100% 100%; */
-                border: 5px solid #fff;
+    if (!target) {
+        target = genKey();
+        await set(ref(db, `${GAME_PATH}/sessions/${target}`), {
+            players: {},
+            started: false,
+            board: null,
+            turn: 0,
+            winner: null
+        });
+    }
 
-            }
+    location.href = `?session=${target}`;
+    throw "redirect";
+}
 
-            #board button:disabled {
-                /* opacity: 0.4; */
-                cursor: not-allowed;
-                box-shadow: none;
-                background: linear-gradient(
-                    145deg,
-                    #005183,
-                    #6c94ae,
-                    #4d7692,
-                    #4d7692
-                );
-                color: rgba(255,255,255,0.5);
-            }
+/* ================= JOIN ================= */
 
-        </style>
-    </head>
-    <body>
+const sessionRef = ref(db, `${GAME_PATH}/sessions/${sessionId}`);
+const playersRef = ref(db, `${GAME_PATH}/sessions/${sessionId}/players`);
 
-        <header class="banner large">
-            <h1>mor!tz sein<br><span style="font-size:1rem">&lt;html></span>tiktaktoe<span style="font-size:1rem">&lt;/html></span></h1>
-        </header>
+const playersSnap = await get(playersRef);
+const players = playersSnap.val() || {};
 
-        <div class="loading">warte auf spieler</div>
+let myIndex = Object.entries(players).find(([_, ip]) => ip === IP)?.[0];
 
-        <div id="board" style="display:none;grid-template-columns:repeat(3,100px);gap:5px">
-            <button data-i="0"> </button>
-            <button data-i="1"> </button>
-            <button data-i="2"> </button>
-            <button data-i="3"> </button>
-            <button data-i="4"> </button>
-            <button data-i="5"> </button>
-            <button data-i="6"> </button>
-            <button data-i="7"> </button>
-            <button data-i="8"> </button>
-        </div>
+if (myIndex == null && Object.keys(players).length < PLAYER_COUNT) {
+    myIndex = Object.keys(players).length;
+    await set(ref(db, `${GAME_PATH}/sessions/${sessionId}/players/${myIndex}`), IP);
+}
 
-        <div id="endScreen" style="display:none;text-align:center;margin-top:30px">
-            <h2 id="endText"></h2>
-            <button id="replayBtn">Replay</button>
-            <p id="replayInfo"></p>
-        </div>
+myIndex = Number(myIndex);
 
-        <script type="module">
-            import { getIP } from "../utils.js";
-            import { ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
-            import { db } from "../firebasedata.js";
+/* ================= UI ================= */
 
-            /* ================= SETUP ================= */
-            const snap = await get(ref(db, `games/tik`));
-            const game = snap.val();
-            const IP = await getIP();
-            const params = new URLSearchParams(location.search);
-            let sessionId = params.get("session");
+const boardEl = document.getElementById("board");
+const cells = [...boardEl.querySelectorAll("button")];
+const loadingEl = document.querySelector(".loading");
+const endScreen = document.getElementById("endScreen");
+const endText = document.getElementById("endText");
 
-            function genKey(len = 5) {
-                const c = "abcdefghijklmnopqrstuvwxyz0123456789";
-                return Array.from({ length: len }, () => c[Math.floor(Math.random() * c.length)]).join("");
-            }
+/* ================= GAME LOOP ================= */
 
-            /* ================= MATCHMAKING ================= */
+onValue(sessionRef, async snap => {
+    const s = snap.val();
+    if (!s) return;
 
-            if (!sessionId) {
-                const snap = await get(ref(db, `games/tik/sessions`));
-                let target = null;
+    // START GAME (nur Player 0)
+    if (
+        !s.started &&
+        Object.keys(s.players || {}).length === PLAYER_COUNT &&
+        myIndex === 0
+    ) {
+        await set(ref(db, `${GAME_PATH}/sessions/${sessionId}/started`), true);
+        await set(ref(db, `${GAME_PATH}/sessions/${sessionId}/board`), "---------");
+        await set(ref(db, `${GAME_PATH}/sessions/${sessionId}/turn`), 0);
+        await set(ref(db, `${GAME_PATH}/sessions/${sessionId}/winner`), null);
+        return;
+    }
 
-                if (snap.exists()) {
-                    for (const [id, s] of Object.entries(snap.val())) {
-                        if (!s.started && Object.keys(s.players || {}).length < game.info.playerAmount) {
-                            target = id;
-                            break;
-                        }
-                    }
-                }
+    if (!s.board) return;
 
-                if (!target) {
-                    do { target = genKey(); }
-                    while ((await get(ref(db, `games/tik/sessions/${target}`))).exists());
+    // UI READY
+    loadingEl.style.display = "none";
+    boardEl.style.display = "grid";
 
-                    await set(ref(db, `games/tik/sessions/${target}`), {
-                        players: {},
-                        started: false,
-                        board: null,
-                        turn: 0,
-                        winner: null,
-                    });
-                }
+    render(s);
 
-                location.href = `?session=${target}`;
-                throw "redirect";
-            }
+    // GAME END
+    if (s.winner != null) {
+        endScreen.style.display = "block";
+        endText.textContent =
+            s.winner === -1
+                ? "Unentschieden"
+                : s.winner === myIndex
+                ? "Du hast gewonnen"
+                : "Du hast verloren";
 
-            /* ================= JOIN ================= */
+        if (myIndex === 0) {
+            await set(ref(db, `${GAME_PATH}/sessions/${sessionId}`), null);
+        }
+    } else {
+        endScreen.style.display = "none";
+    }
+});
 
-            const playersRef = ref(db, `games/tik/sessions/${sessionId}/players`);
-            const playersSnap = await get(playersRef);
+/* ================= INPUT ================= */
 
-            let myIndex = null;
-            const players = playersSnap.val() || {};
+cells.forEach(btn => {
+    btn.onclick = async () => {
+        const i = Number(btn.dataset.i);
+        const snap = await get(sessionRef);
+        const s = snap.val();
 
-            for (const [i, ip] of Object.entries(players)) {
-                if (ip === IP) myIndex = Number(i);
-            }
+        if (!s?.board) return;
+        if (s.winner != null) return;
+        if (s.turn !== myIndex) return;
+        if (s.board[i] !== "-") return;
 
-            if (myIndex === null && Object.keys(players).length < game.info.playerAmount) {
-                myIndex = Object.keys(players).length;
-                await set(ref(db, `games/tik/sessions/${sessionId}/players/${myIndex}`), IP);
-            }
+        const board = s.board.split("");
+        board[i] = myIndex === 0 ? "X" : "O";
 
-            /* ================= GAME ================= */
+        const win = checkWin(board.join(""));
+        const draw = !win && board.every(v => v !== "-");
 
-            const sessionRef = ref(db, `games/tik/sessions/${sessionId}`);
-            const boardEl = document.getElementById("board");
-            const cells = [...boardEl.querySelectorAll("button")];
-        
-            // Winner alert
-            const endScreen = document.getElementById("endScreen");
-            const endText = document.getElementById("endText");
-            const replayBtn = document.getElementById("replayBtn");
-            const replayInfo = document.getElementById("replayInfo");
-            onValue(sessionRef, async snap => {
-                const s = snap.val();
-                if (!s) return;
+        await set(ref(db, `${GAME_PATH}/sessions/${sessionId}/board`), board.join(""));
+        await set(ref(db, `${GAME_PATH}/sessions/${sessionId}/turn`), 1 - s.turn);
+        await set(
+            ref(db, `${GAME_PATH}/sessions/${sessionId}/winner`),
+            win ? myIndex : draw ? -1 : null
+        );
+    };
+});
 
-                // START GAME (nur einmal, nur Player 0)
-                if (
-                    !s.started &&
-                    Object.keys(s.players || {}).length === game.info.playerAmount &&
-                    myIndex === 0
-                ) {
-                    await set(ref(db, `games/tik/sessions/${sessionId}`), {
-                        ...s,
-                        started: true,
-                        board: "---------",
-                        turn: 0,
-                        winner: null
-                    });
-                    return;
-                }
+/* ================= HELPERS ================= */
 
-                if (!s.board) return;
+function render(s) {
+    s.board.split("").forEach((v, i) => {
+        cells[i].textContent = v === "-" ? "" : v;
+        cells[i].disabled =
+            v !== "-" ||
+            s.turn !== myIndex ||
+            s.winner != null;
+    });
+}
 
-                render(s);
+function checkWin(b) {
+    const w = [
+        [0,1,2],[3,4,5],[6,7,8],
+        [0,3,6],[1,4,7],[2,5,8],
+        [0,4,8],[2,4,6]
+    ];
+    return w.some(([a,b1,c]) =>
+        b[a] !== "-" && b[a] === b[b1] && b[a] === b[c]
+    );
+}
+</script>
 
-                if (s.winner != null) {
-                    endScreen.style.display = "block";
-                    endText.textContent =
-                        s.winner === -1
-                            ? "Unentschieden"
-                            : s.winner === myIndex
-                            ? "Du hast gewonnen"
-                            : "Du hast verloren";
-
-                    // Session sofort löschen, wenn das Spiel vorbei ist
-                    await set(ref(db, `games/tik/sessions/${sessionId}`), null);
-
-                    // Replay-Button nur noch Seite neu laden
-                    replayBtn.style.display = "inline-block";
-                    replayInfo.textContent = "";
-                } else {
-                    endScreen.style.display = "none";
-                }
-
-                // Replay-Button einfach die Seite reloaden
-                replayBtn.onclick = () => {
-                    location.reload();
-                };
-            });
-
-            
-
-            /* ================= INPUT ================= */
-            cells.forEach(btn => {
-                btn.onclick = async () => {
-                    const i = Number(btn.dataset.i);
-                    const snap = await get(sessionRef);
-                    const s = snap.val();
-                    if (!s?.board) return;
-                    if (s.winner != null) return;
-                    if (s.turn !== myIndex) return;
-                    if (s.board[i] == "X" || s.board[i] == "O") return; // hier fix
-                    console.log("altes board ", s.board);
-                    let board = s.board.split("");       // String → Array
-                    board[i] = myIndex === 0 ? "X" : "O";
-                    board = board.join("");              // Array → String
-                    console.log("neues board ", board);
-
-                    const win = checkWin(board);
-                    const draw = !win && board.split("").every(v => v !== "-");
-
-                    await set(ref(db, `games/tik/sessions/${sessionId}/board`), board);
-                    await set(ref(db, `games/tik/sessions/${sessionId}/turn`),
-                        win || draw ? s.turn : 1 - s.turn
-                    );
-                    await set(ref(db, `games/tik/sessions/${sessionId}/winner`),
-                        win ? myIndex : draw ? -1 : null
-                    );
-                };
-            });
-
-
-
-            /* ================= HELPERS ================= */
-
-            function render(s) {
-                s.board.split("").forEach((v, i) => {
-                    cells[i].textContent = v === "-" ? "" : v;
-                    cells[i].disabled = v == "X" || v == "O" || s.turn !== myIndex || s.winner != null;
-                });
-            }
-
-            function checkWin(board) {
-                const b = board.split(""); // String → Array
-                const wins = [
-                    [0,1,2],[3,4,5],[6,7,8],
-                    [0,3,6],[1,4,7],[2,5,8],
-                    [0,4,8],[2,4,6]
-                ];
-                
-                return wins.some(([a,b1,c]) => 
-                    b[a] !== "-" && b[a] === b[b1] && b[a] === b[c]
-                );
-            }
-        </script>
-    </body>
+</body>
 </html>

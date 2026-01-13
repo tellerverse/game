@@ -132,7 +132,6 @@
                         board: null,
                         turn: 0,
                         winner: null,
-                        replay: { 0: false, 1: false }
                     });
                 }
 
@@ -169,11 +168,6 @@
             const replayBtn = document.getElementById("replayBtn");
             const replayInfo = document.getElementById("replayInfo");
 
-            // Replay-Button nur einmal binden
-            replayBtn.onclick = async () => {
-                await set(ref(db, `games/${game.id}/sessions/${sessionId}/replay/${myIndex}`), true);
-            };
-
             // **Ein einziger Listener für Session-Updates**
             onValue(sessionRef, async snap => {
                 const s = snap.val();
@@ -183,7 +177,7 @@
                 render(s);
 
                 // Winner / Endscreen
-                if (s.winner !== null) {
+                if (s.winner != null) {
                     endScreen.style.display = "block";
                     endText.textContent =
                         s.winner === -1
@@ -192,27 +186,20 @@
                             ? "Du hast gewonnen"
                             : "Du hast verloren";
 
-                    const myReplay = s.replay?.[myIndex];
-                    const enemyReplay = s.replay?.[1 - myIndex];
+                    // Session sofort löschen, wenn das Spiel vorbei ist
+                    await set(ref(db, `games/${game.id}/sessions/${sessionId}`), null);
 
-                    replayBtn.style.display = myReplay ? "none" : "inline-block";
-                    replayInfo.textContent =
-                        myReplay && !enemyReplay
-                            ? "Warten auf Gegner…"
-                            : enemyReplay && !myReplay
-                            ? "Rival wants to play again"
-                            : "";
+                    // Replay-Button nur noch Seite neu laden
+                    replayBtn.style.display = "inline-block";
+                    replayInfo.textContent = "";
                 } else {
                     endScreen.style.display = "none";
                 }
 
-                // Restart nur Player 0
-                if (s.replay?.[0] && s.replay?.[1] && myIndex === 0) {
-                    await set(ref(db, `games/${game.id}/sessions/${sessionId}/board`), "---------");
-                    await set(ref(db, `games/${game.id}/sessions/${sessionId}/turn`), 0);
-                    await set(ref(db, `games/${game.id}/sessions/${sessionId}/winner`), null);
-                    await set(ref(db, `games/${game.id}/sessions/${sessionId}/replay`), {0:false,1:false});
-                }
+                // Replay-Button einfach die Seite reloaden
+                replayBtn.onclick = () => {
+                    location.reload();
+                };
             });
 
             

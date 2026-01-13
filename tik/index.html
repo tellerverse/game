@@ -165,21 +165,30 @@
             const endText = document.getElementById("endText");
             const replayBtn = document.getElementById("replayBtn");
             const replayInfo = document.getElementById("replayInfo");
-
-            // **Ein einziger Listener für Session-Updates**
             onValue(sessionRef, async snap => {
                 const s = snap.val();
-                if (!s || !s.board) return;
+                if (!s) return;
 
-                // start game
-                if (!s.started && Object.keys(s.players || {}).length === game.info.playerAmount) {
-                    set(ref(db, `games/tik/sessions/${sessionId}/started`), true);
+                // START GAME (nur einmal, nur Player 0)
+                if (
+                    !s.started &&
+                    Object.keys(s.players || {}).length === game.info.playerAmount &&
+                    myIndex === 0
+                ) {
+                    await set(ref(db, `games/tik/sessions/${sessionId}`), {
+                        ...s,
+                        started: true,
+                        board: "---------",
+                        turn: 0,
+                        winner: null
+                    });
+                    return;
                 }
 
-                // Board rendern
+                if (!s.board) return;
+
                 render(s);
 
-                // Winner / Endscreen
                 if (s.winner != null) {
                     endScreen.style.display = "block";
                     endText.textContent =

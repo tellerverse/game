@@ -94,10 +94,8 @@
             import { db } from "../firebasedata.js";
 
             /* ================= SETUP ================= */
-            const game = await (async () => {
-                const snap = await get(ref(db, `games/tik`));
-                return snap.val();
-            })();
+            const snap = await get(ref(db, `games/tik`));
+            const game = snap.val();
             const IP = await getIP();
             const params = new URLSearchParams(location.search);
             let sessionId = params.get("session");
@@ -110,7 +108,7 @@
             /* ================= MATCHMAKING ================= */
 
             if (!sessionId) {
-                const snap = await get(ref(db, `games/${game.id}/sessions`));
+                const snap = await get(ref(db, `games/tik/sessions`));
                 let target = null;
 
                 if (snap.exists()) {
@@ -124,9 +122,9 @@
 
                 if (!target) {
                     do { target = genKey(); }
-                    while ((await get(ref(db, `games/${game.id}/sessions/${target}`))).exists());
+                    while ((await get(ref(db, `games/tik/sessions/${target}`))).exists());
 
-                    await set(ref(db, `games/${game.id}/sessions/${target}`), {
+                    await set(ref(db, `games/tik/sessions/${target}`), {
                         players: {},
                         started: false,
                         board: null,
@@ -141,7 +139,7 @@
 
             /* ================= JOIN ================= */
 
-            const playersRef = ref(db, `games/${game.id}/sessions/${sessionId}/players`);
+            const playersRef = ref(db, `games/tik/sessions/${sessionId}/players`);
             const playersSnap = await get(playersRef);
 
             let myIndex = null;
@@ -153,12 +151,12 @@
 
             if (myIndex === null && Object.keys(players).length < game.info.playerAmount) {
                 myIndex = Object.keys(players).length;
-                await set(ref(db, `games/${game.id}/sessions/${sessionId}/players/${myIndex}`), IP);
+                await set(ref(db, `games/tik/sessions/${sessionId}/players/${myIndex}`), IP);
             }
 
             /* ================= GAME ================= */
 
-            const sessionRef = ref(db, `games/${game.id}/sessions/${sessionId}`);
+            const sessionRef = ref(db, `games/tik/sessions/${sessionId}`);
             const boardEl = document.getElementById("board");
             const cells = [...boardEl.querySelectorAll("button")];
         
@@ -187,7 +185,7 @@
                             : "Du hast verloren";
 
                     // Session sofort löschen, wenn das Spiel vorbei ist
-                    await set(ref(db, `games/${game.id}/sessions/${sessionId}`), null);
+                    await set(ref(db, `games/tik/sessions/${sessionId}`), null);
 
                     // Replay-Button nur noch Seite neu laden
                     replayBtn.style.display = "inline-block";
@@ -223,11 +221,11 @@
                     const win = checkWin(board);
                     const draw = !win && board.split("").every(v => v !== "-");
 
-                    await set(ref(db, `games/${game.id}/sessions/${sessionId}/board`), board);
-                    await set(ref(db, `games/${game.id}/sessions/${sessionId}/turn`),
+                    await set(ref(db, `games/tik/sessions/${sessionId}/board`), board);
+                    await set(ref(db, `games/tik/sessions/${sessionId}/turn`),
                         win || draw ? s.turn : 1 - s.turn
                     );
-                    await set(ref(db, `games/${game.id}/sessions/${sessionId}/winner`),
+                    await set(ref(db, `games/tik/sessions/${sessionId}/winner`),
                         win ? myIndex : draw ? -1 : null
                     );
                 };

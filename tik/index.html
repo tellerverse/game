@@ -171,6 +171,11 @@
                 const s = snap.val();
                 if (!s || !s.board) return;
 
+                // start game
+                if (!s.started && Object.keys(s.players || {}).length === game.info.playerAmount) {
+                    set(ref(db, `games/tik/sessions/${sessionId}/started`), true);
+                }
+
                 // Board rendern
                 render(s);
 

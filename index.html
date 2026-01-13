@@ -142,18 +142,6 @@
     <script type="module">
         import { ref, get, onValue } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
         import { db } from "./firebasedata.js";
-        import { Tik, Sudoku, Ship, Find } from "./gameclasses.js";
-
-        export const games = {
-            tik: new Tik,
-            sudoku: new Sudoku,
-            ship: new Ship,
-            find: new Find
-        };
-
-        for (const [key, game] of Object.entries(games)) {
-            await game.init()
-        }
 
         document.querySelectorAll(".game").forEach(el => {
             el.onclick = () => {

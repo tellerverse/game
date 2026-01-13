@@ -89,16 +89,15 @@
         </div>
 
         <script type="module">
-            import { Tik } from "../gameclasses.js";
             import { getIP } from "../utils.js";
             import { ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
             import { db } from "../firebasedata.js";
 
             /* ================= SETUP ================= */
-
-            const game = new Tik();
-            await game.init();
-
+            const game = await (async () => {
+                const snap = await get(ref(db, `games/tik`));
+                return snap.val();
+            })();
             const IP = await getIP();
             const params = new URLSearchParams(location.search);
             let sessionId = params.get("session");

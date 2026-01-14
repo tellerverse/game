@@ -4,61 +4,42 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Schiffe versenken</title>
-<link rel="stylesheet" href="../style.css">
 
 <style>
+body { font-family:sans-serif; background:#0b1220; color:white; text-align:center }
 .board {
   display:grid;
   grid-template-columns:repeat(10,36px);
   gap:4px;
   justify-content:center;
-  margin:30px auto;
+  margin:20px auto;
 }
-
 .cell {
-  width:36px;
-  height:36px;
+  width:36px; height:36px;
   border-radius:6px;
-  background:linear-gradient(145deg,#0088dc,#9ed8ff);
+  background:#1e90ff;
 }
-
 .cell.ship { background:#4caf50 }
-.cell.hit  { background:#e53935 }
-.cell.miss { background:#555 }
-
-#ships {
-  display:flex;
-  gap:10px;
-  justify-content:center;
-}
-
+#ships { display:flex; gap:10px; justify-content:center; margin-top:20px }
 .ship {
   background:#4caf50;
-  border-radius:6px;
   height:36px;
+  border-radius:6px;
+  touch-action:none;
 }
-
-button {
-  display:block;
-  margin:20px auto;
-  font-size:1.2rem;
-}
+button { font-size:1.2rem; margin-top:20px }
+.hidden { display:none }
 </style>
 </head>
 
 <body>
 
-<header class="banner large">
-<h1>mor!tz<br>&lt;html&gt;schiffe&lt;/html&gt;</h1>
-</header>
+<h1>Schiffe versenken</h1>
+<div id="status">warte…</div>
 
-<div class="loading">warte auf spieler…</div>
-
-<div id="ships"></div>
-<button id="rotateBtn">ROTATE</button>
-<button id="readyBtn" style="display:none">READY</button>
-
-<div id="board" class="board" style="display:none"></div>
+<div id="ships" class="hidden"></div>
+<div id="board" class="board hidden"></div>
+<button id="readyBtn" class="hidden">READY</button>
 
 <script type="module">
 import { ref,get,set,onValue } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
@@ -69,58 +50,52 @@ import { getIP } from "../utils.js";
 
 const SIZE = 10;
 const SHIPS = [5,4,3,3,2];
-let orientation = "h";
-
-/* ================= UTILS ================= */
-
-const other = i => i===0?1:0;
-const genKey = (l=5)=>Array.from({length:l},()=>Math.random().toString(36)[2]).join("");
+const GAME_PATH = "games/ship/sessions";
+const IP = await getIP();
 
 /* ================= SESSION ================= */
 
-const IP = await getIP();
 const params = new URLSearchParams(location.search);
 let session = params.get("session");
-const GAME_PATH = "games/ship/sessions";
 
-if(!session){
-  const snap = await get(ref(db,GAME_PATH));
-  let target=null;
-  if(snap.exists()){
-    for(const [id,s] of Object.entries(snap.val())){
-      if(!s.started && Object.keys(s.players||{}).length<2){
-        target=id; break;
-      }
+const genKey = () => Math.random().toString(36).slice(2,7);
+
+if (!session) {
+  const snap = await get(ref(db, GAME_PATH));
+  let target = null;
+
+  if (snap.exists()) {
+    for (const [id,s] of Object.entries(snap.val())) {
+      if (!s.started && Object.keys(s.players||{}).length < 2)
+        target = id;
     }
   }
-  if(!target){
-    target=genKey();
-    await set(ref(db,`${GAME_PATH}/${target}`),{
-      players:{},
-      started:false,
-      phase:"place",
-      ready:{},
-      activeBoard:0,
-      turn:1
+
+  if (!target) {
+    target = genKey();
+    await set(ref(db, `${GAME_PATH}/${target}`), {
+      players:{}, started:false, phase:"place",
+      ready:{}, activeBoard:0
     });
   }
-  location.href=`?session=${target}`;
+
+  location.href = `?session=${target}`;
   throw "redirect";
 }
 
 /* ================= JOIN ================= */
 
-const sessionRef = ref(db,`${GAME_PATH}/${session}`);
+const sessionRef = ref(db, `${GAME_PATH}/${session}`);
 const snap = await get(sessionRef);
 const data = snap.val();
 
-let myIndex=null;
-for(const [i,ip] of Object.entries(data.players||{}))
-  if(ip===IP) myIndex=+i;
+let myIndex = null;
+for (const [i,ip] of Object.entries(data.players||{}))
+  if (ip === IP) myIndex = +i;
 
-if(myIndex===null){
-  myIndex=Object.keys(data.players||{}).length;
-  await set(ref(db,`${GAME_PATH}/${session}/players/${myIndex}`),IP);
+if (myIndex === null) {
+  myIndex = Object.keys(data.players||{}).length;
+  await set(ref(db, `${GAME_PATH}/${session}/players/${myIndex}`), IP);
 }
 
 /* ================= UI ================= */
@@ -128,10 +103,10 @@ if(myIndex===null){
 const boardEl = document.getElementById("board");
 const shipsEl = document.getElementById("ships");
 const readyBtn = document.getElementById("readyBtn");
-const rotateBtn = document.getElementById("rotateBtn");
+const statusEl = document.getElementById("status");
 
-const cells=[];
-for(let i=0;i<100;i++){
+const cells = [];
+for (let i=0;i<100;i++){
   const c=document.createElement("div");
   c.className="cell";
   c.dataset.i=i;
@@ -141,31 +116,93 @@ for(let i=0;i<100;i++){
 
 /* ================= PLACEMENT ================= */
 
-let shipQueue=[...SHIPS];
-let placedShips=[];
+let placedShips = [];
+let draggingShip = null;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
 
-rotateBtn.onclick=()=>orientation=orientation==="h"?"v":"h";
+/* === SHIPS ERZEUGEN === */
+SHIPS.forEach(len => {
+  const ship = document.createElement("div");
+  ship.className = "ship";
+  ship.dataset.len = len;
+  ship.dataset.rot = "h";
+  ship.style.width = `${len * 36}px`;
 
-cells.forEach(c=>{
-  c.onclick=()=>{
-    if(!shipQueue.length) return;
-    const len=shipQueue[0];
-    const start=+c.dataset.i;
-    const list=[];
+  shipsEl.appendChild(ship);
 
-    for(let k=0;k<len;k++){
-      const i=orientation==="h"?start+k:start+k*SIZE;
-      if(i>=100) return;
-      list.push(i);
+  /* ROTATION PER KLICK */
+  ship.onclick = e => {
+    if (draggingShip) return;
+    ship.dataset.rot = ship.dataset.rot === "h" ? "v" : "h";
+    ship.style.width  = ship.dataset.rot === "h" ? `${len * 36}px` : "36px";
+    ship.style.height = ship.dataset.rot === "v" ? `${len * 36}px` : "36px";
+  };
+
+  /* === DRAG START === */
+  ship.addEventListener("pointerdown", e => {
+    e.preventDefault();
+
+    draggingShip = ship;
+    ship.setPointerCapture(e.pointerId);
+
+    const rect = ship.getBoundingClientRect();
+    dragOffsetX = e.clientX - rect.left;
+    dragOffsetY = e.clientY - rect.top;
+
+    ship.style.position = "absolute";
+    ship.style.zIndex = 1000;
+  });
+
+  /* === DRAG MOVE === */
+  ship.addEventListener("pointermove", e => {
+    if (!draggingShip) return;
+    ship.style.left = `${e.clientX - dragOffsetX}px`;
+    ship.style.top  = `${e.clientY - dragOffsetY}px`;
+  });
+
+  /* === DROP === */
+  ship.addEventListener("pointerup", e => {
+    if (!draggingShip) return;
+
+    const rect = boardEl.getBoundingClientRect();
+    const col = Math.floor((e.clientX - rect.left) / 40);
+    const row = Math.floor((e.clientY - rect.top) / 40);
+
+    if (col < 0 || row < 0 || col >= 10 || row >= 10) {
+      resetShip(ship);
+      return;
     }
 
-    list.forEach(i=>cells[i].classList.add("ship"));
-    placedShips.push({cells:list});
-    shipQueue.shift();
+    const start = row * 10 + col;
+    const cellsIdx = [];
 
-    if(!shipQueue.length) readyBtn.style.display="block";
-  };
+    for (let k = 0; k < len; k++) {
+      const i = ship.dataset.rot === "h"
+        ? start + k
+        : start + k * 10;
+
+      if (i >= 100) return resetShip(ship);
+      cellsIdx.push(i);
+    }
+
+    cellsIdx.forEach(i => cells[i].classList.add("ship"));
+    placedShips.push({ cells: cellsIdx });
+
+    ship.remove();
+    draggingShip = null;
+
+    if (placedShips.length === SHIPS.length)
+      readyBtn.classList.remove("hidden");
+  });
 });
+
+function resetShip(ship) {
+  ship.style.position = "relative";
+  ship.style.left = "";
+  ship.style.top = "";
+  draggingShip = null;
+}
 
 /* ================= READY ================= */
 
@@ -175,66 +212,57 @@ readyBtn.onclick=async()=>{
     shots:"-".repeat(100)
   });
   await set(ref(db,`${GAME_PATH}/${session}/ready/${myIndex}`),true);
+  readyBtn.disabled=true;
 };
-
-/* ================= RENDER ================= */
-
-function renderBoard(s){
-  cells.forEach(c=>c.className="cell");
-  const b=s.boards[s.activeBoard];
-  if(!b) return;
-
-  if(s.activeBoard===myIndex){
-    b.ships.forEach(ship=>ship.cells.forEach(i=>cells[i].classList.add("ship")));
-  }
-
-  b.shots.split("").forEach((v,i)=>{
-    if(v==="x") cells[i].classList.add("hit");
-    if(v==="o") cells[i].classList.add("miss");
-  });
-}
 
 /* ================= GAME LOOP ================= */
 
-onValue(sessionRef,async snap=>{
+onValue(sessionRef, async snap=>{
   const s=snap.val();
   if(!s) return;
 
-  if(!s.started && Object.keys(s.ready||{}).length===2 && myIndex===0){
+  /* started sobald 2 Spieler */
+  if (!s.started && Object.keys(s.players||{}).length===2 && myIndex===0) {
     await set(ref(db,`${GAME_PATH}/${session}/started`),true);
-    await set(ref(db,`${GAME_PATH}/${session}/phase`),"fight");
   }
 
-  if(!s.started) return;
+  if (!s.started) {
+    statusEl.textContent="warte auf spieler…";
+    return;
+  }
 
-  document.querySelector(".loading").style.display="none";
-  boardEl.style.display="grid";
-  shipsEl.style.display="none";
-  rotateBtn.style.display="none";
-  readyBtn.style.display="none";
+  /* place-phase */
+  if (s.phase==="place") {
+    statusEl.textContent="Platziere deine Schiffe";
+    shipsEl.classList.remove("hidden");
+    boardEl.classList.remove("hidden");
 
-  renderBoard(s);
+    if (Object.keys(s.ready||{}).length===2 && myIndex===0) {
+      await set(ref(db,`${GAME_PATH}/${session}/phase`),"fight");
+      await set(ref(db,`${GAME_PATH}/${session}/activeBoard`),0);
+    }
+  }
 
-  if(s.phase==="fight"){
-    if(s.turn===myIndex && s.activeBoard!==myIndex){
-      cells.forEach(c=>{
-        c.onclick=async()=>{
-          const i=+c.dataset.i;
-          const board=structuredClone(s.boards[s.activeBoard]);
-          if(board.shots[i]!=="-") return;
+  /* fight-phase */
+  if (s.phase==="fight") {
+    shipsEl.classList.add("hidden");
+    readyBtn.classList.add("hidden");
 
-          const hit=board.ships.some(ship=>ship.cells.includes(i));
-          board.shots=
-            board.shots.slice(0,i)+(hit?"x":"o")+board.shots.slice(i+1);
+    const showBoard = s.activeBoard;
+    boardEl.classList.remove("hidden");
 
-          await set(ref(db,`${GAME_PATH}/${session}/boards/${s.activeBoard}`),board);
+    statusEl.textContent =
+      showBoard===myIndex ? "Dein Feld" : "Gegnerfeld";
 
-          if(!hit){
-            await set(ref(db,`${GAME_PATH}/${session}/activeBoard`),myIndex);
-            await set(ref(db,`${GAME_PATH}/${session}/turn`),other(myIndex));
-          }
-        };
-      });
+    cells.forEach(c=>c.className="cell");
+
+    const board = s.boards?.[showBoard];
+    if (!board) return;
+
+    if (showBoard===myIndex) {
+      board.ships.forEach(sh =>
+        sh.cells.forEach(i=>cells[i].classList.add("ship"))
+      );
     }
   }
 });

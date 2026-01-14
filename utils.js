@@ -1,6 +1,3 @@
-import { ref, set } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
-import { db } from './firebasedata.js';
-
 export function lightenHex(hex, percent) {
     // Entferne #
     hex = hex.replace('#', '');

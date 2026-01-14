@@ -13,7 +13,7 @@
 
                 width: min(92vw, 360px);
                 aspect-ratio: 1 / 1;
-                font-size: calc(100% / 9); /* 🔥 MAGIC */
+                font-size: calc(100% / 9);
 
                 grid-template-columns: repeat(9, 1fr);
                 gap: 2px;
@@ -109,8 +109,6 @@
             import { db } from "../firebasedata.js";
             import { getIP } from "../utils.js";
 
-            /* ================== UTIL ================== */
-
             function nextValue(v) {
                 if (v === "0") return "1";
                 if (v === "9") return "0";
@@ -122,13 +120,9 @@
                 return Array.from({length:len},()=>c[Math.floor(Math.random()*c.length)]).join("");
             }
 
-            /* ================== SUDOKU ================== */
-
             function generateSudoku() {
                 const SIZE = 9;
                 const EMPTY = 0;
-
-                /* ---------- Helpers ---------- */
 
                 function shuffle(arr) {
                     return arr.sort(() => Math.random() - 0.5);
@@ -151,8 +145,6 @@
                     return true;
                 }
 
-                /* ---------- Full Board Generator ---------- */
-
                 function fillBoard(board) {
                     for (let r = 0; r < 9; r++) {
                         for (let c = 0; c < 9; c++) {
@@ -170,8 +162,6 @@
                     }
                     return true;
                 }
-
-                /* ---------- Solution Counter ---------- */
 
                 function countSolutions(board, limit = 2) {
                     let count = 0;
@@ -199,8 +189,6 @@
                     return count;
                 }
 
-                /* ---------- Generate ---------- */
-
                 let board = Array.from({ length: 9 }, () => Array(9).fill(EMPTY));
                 fillBoard(board);
 
@@ -218,7 +206,7 @@
 
                     const copy = puzzle.map(row => row.slice());
                     if (countSolutions(copy) !== 1) {
-                        puzzle[r][c] = backup; // rollback
+                        puzzle[r][c] = backup;
                     }
                 }
 
@@ -227,9 +215,6 @@
                     solution
                 };
             }
-
-
-            /* ================== MATCHMAKING ================== */
 
             const IP = await getIP();
             const params = new URLSearchParams(location.search);
@@ -264,8 +249,6 @@
                 throw "redirect";
             }
 
-            /* ================== JOIN ================== */
-
             const sessionRef = ref(db, `${GAME_PATH}/${session}`);
             const snap = await get(sessionRef);
             const data = snap.val();
@@ -282,8 +265,6 @@
                 await set(ref(db, `${GAME_PATH}/${session}/players/${myIndex}`), IP);
             }
 
-            /* ================== UI ================== */
-
             const boardEl = document.getElementById("board");
             const loadingEl = document.querySelector(".loading");
             const cells = [];
@@ -295,11 +276,9 @@
                 const row = Math.floor(i / 9);
                 const col = i % 9;
 
-                // vertikale 3er-Grenzen
                 if (col % 3 === 0 && col !== 0) b.classList.add("subgrid-left");
                 if (col % 3 === 2 && col !== 8) b.classList.add("subgrid-right");
 
-                // horizontale 3er-Grenzen
                 if (row % 3 === 0 && row !== 0) b.classList.add("subgrid-top");
                 if (row % 3 === 2 && row !== 8) b.classList.add("subgrid-bottom");
 
@@ -307,9 +286,6 @@
                 boardEl.appendChild(b);
                 cells.push(b);
             }
-
-
-            /* ================== GAME LOOP ================== */
 
             let lastWinner = null;
 
@@ -346,8 +322,6 @@
                 }
             });
 
-            /* ================== INPUT ================== */
-
             cells.forEach(btn => {
                 btn.onclick = async () => {
                     const i = +btn.dataset.i;
@@ -359,7 +333,7 @@
 
                     if (s.puzzle[i] !== "0") {
                         btn.classList.remove("denied");
-                        void btn.offsetWidth; // reflow → Animation reset
+                        void btn.offsetWidth;
                         btn.classList.add("denied");
                         return;
                     }
@@ -373,7 +347,6 @@
                         board
                     );
 
-                    // Gewinn prüfen
                     if (board === s.solution) {
                         await set(
                             ref(db, `${GAME_PATH}/${session}/winner`),
@@ -383,8 +356,6 @@
                 };
             });
 
-
-            /* ================== RENDER ================== */
             function getEnemyIndex() {
                 return myIndex === 0 ? 1 : 0;
             }
@@ -396,21 +367,16 @@
                 myBoard.split("").forEach((v, i) => {
                     const cell = cells[i];
 
-                    // eigener Wert anzeigen
                     cell.textContent = v === "0" ? "" : v;
 
-                    // feste Zellen
                     cell.classList.toggle("fixed", s.puzzle[i] !== "0");
 
-                    // Gegner hat diese Zelle "gefunden"
                     const enemyTouched =
                         s.puzzle[i] === "0" && enemyBoard[i] !== "0";
 
                     cell.classList.toggle("enemy-found", enemyTouched);
                 });
             }
-
-
         </script>
     </body>
 </html>

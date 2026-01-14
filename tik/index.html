@@ -1,312 +1,295 @@
 <!DOCTYPE html>
 <html lang="de">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tic Tac Toe</title>
-    <link rel="stylesheet" href="../style.css">
-    <style>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Tic Tac Toe</title>
+        <link rel="stylesheet" href="../style.css">
+        <style>
 
-        #endScreen {
-            display: none;
-            text-align: center;
-            margin-top: 120px;
-            font-size: 2rem;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: linear-gradient(
-                145deg,
-                #ba838e,
-                #ffd2db,
-                #ba838e,
-                #ba838e
-            );
-            border: 3px solid #fff;
-            padding: 20px;
-            border-radius: 12px;
-            color: #ffffff;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-        }
-
-        #endScreen button {
-            width: 150px;
-            height: 50px;
-            margin-top: 20px;
-            padding: 10px 20px;
-            font-size: 1.7rem;
-            font-weight: 700;
-            color: #fff;
-            background: linear-gradient(
-                145deg,
-                #0088dc,
-                #9ed8ff,
-                #87cfff,
-                #87cfff
-            );
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            font-family: 'Burbank', sans-serif;
-        }
-
-        #endScreen button:hover {
-            /* box-shadow: 0 6px 12px rgba(0,0,0,0.4); */
-            border: 5px solid #fff;
-        }
-
-        #board {
-            display: grid;
-            grid-template-columns: repeat(3, 100px);
-            gap: 10px;
-            justify-content: center;
-            margin-top: 50px;
-        }
-
-        #board button {
-            width: 100px;
-            height: 100px;
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: #fff;
-            background: linear-gradient(
-                145deg,
-                #0088dc,
-                #9ed8ff,
-                #87cfff,
-                #87cfff
-            );
-            /* background-size: 400% 400%; */
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-            font-family: 'Burbank', sans-serif;
-        }
-
-        #board button:hover:not(:disabled) {
-            /* transform: scale(1.08); */
-            /* background-position: 100% 100%; */
-            border: 5px solid #fff;
-
-        }
-
-        #board button:disabled {
-            /* opacity: 0.4; */
-            cursor: not-allowed;
-            box-shadow: none;
-            background: linear-gradient(
-                145deg,
-                #005183,
-                #6c94ae,
-                #4d7692,
-                #4d7692
-            );
-            color: rgba(255,255,255,0.5);
-        }
-
-    </style>
-</head>
-<body>
-
-<header class="banner large">
-    <h1>mor!tz<br><span style="font-size:1rem">&lt;html&gt;</span>tiktaktoe<span style="font-size:1rem">&lt;/html&gt;</span></h1>
-</header>
-
-<div class="loading">warte auf spieler…</div>
-
-<div id="board" style="display:none;grid-template-columns:repeat(3,100px);gap:5px">
-    <button data-i="0"></button>
-    <button data-i="1"></button>
-    <button data-i="2"></button>
-    <button data-i="3"></button>
-    <button data-i="4"></button>
-    <button data-i="5"></button>
-    <button data-i="6"></button>
-    <button data-i="7"></button>
-    <button data-i="8"></button>
-</div>
-
-<div id="endScreen">
-    <h2 id="endText"></h2>
-    <button onclick="location.reload()">Replay</button>
-</div>
-
-<script type="module">
-import { ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
-import { db } from "../firebasedata.js";
-import { getIP } from "../utils.js";
-
-/* ================= SETUP ================= */
-
-const IP = await getIP();
-const GAME_PATH = "games/tik";
-const PLAYER_COUNT = 2;
-
-const params = new URLSearchParams(location.search);
-let sessionId = params.get("session");
-
-function genKey(len = 5) {
-    const c = "abcdefghijklmnopqrstuvwxyz0123456789";
-    return Array.from({ length: len }, () => c[Math.floor(Math.random() * c.length)]).join("");
-}
-
-/* ================= MATCHMAKING ================= */
-
-if (!sessionId) {
-    const snap = await get(ref(db, `${GAME_PATH}/sessions`));
-    let target = null;
-
-    if (snap.exists()) {
-        for (const [id, s] of Object.entries(snap.val())) {
-            if (!s.started && Object.keys(s.players || {}).length < PLAYER_COUNT) {
-                target = id;
-                break;
+            #endScreen {
+                display: none;
+                text-align: center;
+                margin-top: 120px;
+                font-size: 2rem;
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: linear-gradient(
+                    145deg,
+                    #ba838e,
+                    #ffd2db,
+                    #ba838e,
+                    #ba838e
+                );
+                border: 3px solid #fff;
+                padding: 20px;
+                border-radius: 12px;
+                color: #ffffff;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.5);
             }
-        }
-    }
 
-    if (!target) {
-        target = genKey();
-        await set(ref(db, `${GAME_PATH}/sessions/${target}`), {
-            players: {},
-            started: false,
-            board: null,
-            turn: 0,
-            winner: null
-        });
-    }
+            #endScreen button {
+                width: 150px;
+                height: 50px;
+                margin-top: 20px;
+                padding: 10px 20px;
+                font-size: 1.7rem;
+                font-weight: 700;
+                color: #fff;
+                background: linear-gradient(
+                    145deg,
+                    #0088dc,
+                    #9ed8ff,
+                    #87cfff,
+                    #87cfff
+                );
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+                font-family: 'Burbank', sans-serif;
+            }
 
-    location.href = `?session=${target}`;
-    throw "redirect";
-}
+            #endScreen button:hover {
+                /* box-shadow: 0 6px 12px rgba(0,0,0,0.4); */
+                border: 5px solid #fff;
+            }
 
-/* ================= JOIN ================= */
+            #board {
+                display: grid;
+                grid-template-columns: repeat(3, 100px);
+                gap: 10px;
+                justify-content: center;
+                margin-top: 50px;
+            }
 
-const sessionRef = ref(db, `${GAME_PATH}/sessions/${sessionId}`);
-const playersRef = ref(db, `${GAME_PATH}/sessions/${sessionId}/players`);
+            #board button {
+                width: 100px;
+                height: 100px;
+                font-size: 2.5rem;
+                font-weight: 700;
+                color: #fff;
+                background: linear-gradient(
+                    145deg,
+                    #0088dc,
+                    #9ed8ff,
+                    #87cfff,
+                    #87cfff
+                );
+                /* background-size: 400% 400%; */
+                border: none;
+                border-radius: 12px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+                text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+                font-family: 'Burbank', sans-serif;
+            }
 
-const playersSnap = await get(playersRef);
-const players = playersSnap.val() || {};
+            #board button:hover:not(:disabled) {
+                /* transform: scale(1.08); */
+                /* background-position: 100% 100%; */
+                border: 5px solid #fff;
 
-let myIndex = Object.entries(players).find(([_, ip]) => ip === IP)?.[0];
+            }
 
-if (myIndex == null && Object.keys(players).length < PLAYER_COUNT) {
-    myIndex = Object.keys(players).length;
-    await set(ref(db, `${GAME_PATH}/sessions/${sessionId}/players/${myIndex}`), IP);
-}
+            #board button:disabled {
+                /* opacity: 0.4; */
+                cursor: not-allowed;
+                box-shadow: none;
+                background: linear-gradient(
+                    145deg,
+                    #005183,
+                    #6c94ae,
+                    #4d7692,
+                    #4d7692
+                );
+                color: rgba(255,255,255,0.5);
+            }
 
-myIndex = Number(myIndex);
+        </style>
+    </head>
+    <body>
 
-/* ================= UI ================= */
+        <header class="banner large">
+            <h1>mor!tz<br><span style="font-size:1rem">&lt;html&gt;</span>tiktaktoe<span style="font-size:1rem">&lt;/html&gt;</span></h1>
+        </header>
 
-const boardEl = document.getElementById("board");
-const cells = [...boardEl.querySelectorAll("button")];
-const loadingEl = document.querySelector(".loading");
-const endScreen = document.getElementById("endScreen");
-const endText = document.getElementById("endText");
+        <div class="loading">warte auf spieler…</div>
 
-/* ================= GAME LOOP ================= */
+        <div id="board" style="display:none;grid-template-columns:repeat(3,100px);gap:5px">
+            <button data-i="0"></button>
+            <button data-i="1"></button>
+            <button data-i="2"></button>
+            <button data-i="3"></button>
+            <button data-i="4"></button>
+            <button data-i="5"></button>
+            <button data-i="6"></button>
+            <button data-i="7"></button>
+            <button data-i="8"></button>
+        </div>
 
-onValue(sessionRef, async snap => {
-    const s = snap.val();
-    if (!s) return;
+        <div id="endScreen">
+            <h2 id="endText"></h2>
+            <button onclick="location.reload()">Replay</button>
+        </div>
 
-    // START GAME (nur Player 0)
-    if (
-        !s.started &&
-        Object.keys(s.players || {}).length === PLAYER_COUNT &&
-        myIndex === 0
-    ) {
-        await set(ref(db, `${GAME_PATH}/sessions/${sessionId}/started`), true);
-        await set(ref(db, `${GAME_PATH}/sessions/${sessionId}/board`), "---------");
-        await set(ref(db, `${GAME_PATH}/sessions/${sessionId}/turn`), Math.random() < 0.5 ? 0 : 1);
-        await set(ref(db, `${GAME_PATH}/sessions/${sessionId}/winner`), null);
-        return;
-    }
+        <script type="module">
+            import { ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
+            import { db } from "../firebasedata.js";
+            import { getIP } from "../utils.js";
 
-    if (!s.board) return;
+            const IP = await getIP();
+            const GAME_PATH = "games/tik";
+            const PLAYER_COUNT = 2;
 
-    // UI READY
-    loadingEl.style.display = "none";
-    boardEl.style.display = "grid";
+            const params = new URLSearchParams(location.search);
+            let sessionId = params.get("session");
 
-    render(s);
+            function genKey(len = 5) {
+                const c = "abcdefghijklmnopqrstuvwxyz0123456789";
+                return Array.from({ length: len }, () => c[Math.floor(Math.random() * c.length)]).join("");
+            }
 
-    // GAME END
-    if (s.winner != null) {
-        endScreen.style.display = "block";
-        endText.textContent =
-            s.winner === -1
-                ? "draw(malen)"
-                : s.winner === myIndex
-                ? "you won!"
-                : "you lost";
+            if (!sessionId) {
+                const snap = await get(ref(db, `${GAME_PATH}/sessions`));
+                let target = null;
 
-        if (myIndex === 0) {
-            await set(ref(db, `${GAME_PATH}/sessions/${sessionId}`), null);
-        }
-    } else {
-        endScreen.style.display = "none";
-    }
-});
+                if (snap.exists()) {
+                    for (const [id, s] of Object.entries(snap.val())) {
+                        if (!s.started && Object.keys(s.players || {}).length < PLAYER_COUNT) {
+                            target = id;
+                            break;
+                        }
+                    }
+                }
 
-/* ================= INPUT ================= */
+                if (!target) {
+                    target = genKey();
+                    await set(ref(db, `${GAME_PATH}/sessions/${target}`), {
+                        players: {},
+                        started: false,
+                        board: null,
+                        turn: 0,
+                        winner: null
+                    });
+                }
 
-cells.forEach(btn => {
-    btn.onclick = async () => {
-        const i = Number(btn.dataset.i);
-        const snap = await get(sessionRef);
-        const s = snap.val();
+                location.href = `?session=${target}`;
+                throw "redirect";
+            }
 
-        if (!s?.board) return;
-        if (s.winner != null) return;
-        if (s.turn !== myIndex) return;
-        if (s.board[i] !== "-") return;
+            const sessionRef = ref(db, `${GAME_PATH}/sessions/${sessionId}`);
+            const playersRef = ref(db, `${GAME_PATH}/sessions/${sessionId}/players`);
 
-        const board = s.board.split("");
-        board[i] = myIndex === 0 ? "X" : "O";
+            const playersSnap = await get(playersRef);
+            const players = playersSnap.val() || {};
 
-        const win = checkWin(board.join(""));
-        const draw = !win && board.every(v => v !== "-");
+            let myIndex = Object.entries(players).find(([_, ip]) => ip === IP)?.[0];
 
-        await set(ref(db, `${GAME_PATH}/sessions/${sessionId}/board`), board.join(""));
-        await set(ref(db, `${GAME_PATH}/sessions/${sessionId}/turn`), 1 - s.turn);
-        await set(
-            ref(db, `${GAME_PATH}/sessions/${sessionId}/winner`),
-            win ? myIndex : draw ? -1 : null
-        );
-    };
-});
+            if (myIndex == null && Object.keys(players).length < PLAYER_COUNT) {
+                myIndex = Object.keys(players).length;
+                await set(ref(db, `${GAME_PATH}/sessions/${sessionId}/players/${myIndex}`), IP);
+            }
 
-/* ================= HELPERS ================= */
+            myIndex = Number(myIndex);
 
-function render(s) {
-    s.board.split("").forEach((v, i) => {
-        cells[i].textContent = v === "-" ? "" : v;
-        cells[i].disabled =
-            v !== "-" ||
-            s.turn !== myIndex ||
-            s.winner != null;
-    });
-}
+            const boardEl = document.getElementById("board");
+            const cells = [...boardEl.querySelectorAll("button")];
+            const loadingEl = document.querySelector(".loading");
+            const endScreen = document.getElementById("endScreen");
+            const endText = document.getElementById("endText");
 
-function checkWin(b) {
-    const w = [
-        [0,1,2],[3,4,5],[6,7,8],
-        [0,3,6],[1,4,7],[2,5,8],
-        [0,4,8],[2,4,6]
-    ];
-    return w.some(([a,b1,c]) =>
-        b[a] !== "-" && b[a] === b[b1] && b[a] === b[c]
-    );
-}
-</script>
+            onValue(sessionRef, async snap => {
+                const s = snap.val();
+                if (!s) return;
 
-</body>
+                if (
+                    !s.started &&
+                    Object.keys(s.players || {}).length === PLAYER_COUNT &&
+                    myIndex === 0
+                ) {
+                    await set(ref(db, `${GAME_PATH}/sessions/${sessionId}/started`), true);
+                    await set(ref(db, `${GAME_PATH}/sessions/${sessionId}/board`), "---------");
+                    await set(ref(db, `${GAME_PATH}/sessions/${sessionId}/turn`), Math.random() < 0.5 ? 0 : 1);
+                    await set(ref(db, `${GAME_PATH}/sessions/${sessionId}/winner`), null);
+                    return;
+                }
+
+                if (!s.board) return;
+
+                loadingEl.style.display = "none";
+                boardEl.style.display = "grid";
+
+                render(s);
+
+                if (s.winner != null) {
+                    endScreen.style.display = "block";
+                    endText.textContent =
+                        s.winner === -1
+                            ? "draw(malen)"
+                            : s.winner === myIndex
+                            ? "you won!"
+                            : "you lost";
+
+                    if (myIndex === 0) {
+                        await set(ref(db, `${GAME_PATH}/sessions/${sessionId}`), null);
+                    }
+                } else {
+                    endScreen.style.display = "none";
+                }
+            });
+
+            cells.forEach(btn => {
+                btn.onclick = async () => {
+                    const i = Number(btn.dataset.i);
+                    const snap = await get(sessionRef);
+                    const s = snap.val();
+
+                    if (!s?.board) return;
+                    if (s.winner != null) return;
+                    if (s.turn !== myIndex) return;
+                    if (s.board[i] !== "-") return;
+
+                    const board = s.board.split("");
+                    board[i] = myIndex === 0 ? "X" : "O";
+
+                    const win = checkWin(board.join(""));
+                    const draw = !win && board.every(v => v !== "-");
+
+                    await set(ref(db, `${GAME_PATH}/sessions/${sessionId}/board`), board.join(""));
+                    await set(ref(db, `${GAME_PATH}/sessions/${sessionId}/turn`), 1 - s.turn);
+                    await set(
+                        ref(db, `${GAME_PATH}/sessions/${sessionId}/winner`),
+                        win ? myIndex : draw ? -1 : null
+                    );
+                };
+            });
+
+            function render(s) {
+                s.board.split("").forEach((v, i) => {
+                    cells[i].textContent = v === "-" ? "" : v;
+                    cells[i].disabled =
+                        v !== "-" ||
+                        s.turn !== myIndex ||
+                        s.winner != null;
+                });
+            }
+
+            function checkWin(b) {
+                const w = [
+                    [0,1,2],[3,4,5],[6,7,8],
+                    [0,3,6],[1,4,7],[2,5,8],
+                    [0,4,8],[2,4,6]
+                ];
+                return w.some(([a,b1,c]) =>
+                    b[a] !== "-" && b[a] === b[b1] && b[a] === b[c]
+                );
+            }
+        </script>
+
+    </body>
 </html>

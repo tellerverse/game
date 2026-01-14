@@ -5,27 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Schiffe versenken</title>
 <link rel="stylesheet" href="../style.css">
+
 <style>
-
-#boards {
-  display: flex;
-  gap: 40px;
-  justify-content: center;
-  margin-top: 40px;
-}
-
 .board {
-  display: grid;
-  grid-template-columns: repeat(10, 36px);
-  gap: 4px;
+  display:grid;
+  grid-template-columns:repeat(10,36px);
+  gap:4px;
+  justify-content:center;
+  margin:30px auto;
 }
 
 .cell {
-  width: 36px;
-  height: 36px;
-  border-radius: 6px;
-  background: linear-gradient(145deg,#0088dc,#9ed8ff);
-  cursor: pointer;
+  width:36px;
+  height:36px;
+  border-radius:6px;
+  background:linear-gradient(145deg,#0088dc,#9ed8ff);
 }
 
 .cell.ship { background:#4caf50 }
@@ -36,20 +30,19 @@
   display:flex;
   gap:10px;
   justify-content:center;
-  margin-top:20px;
 }
 
 .ship {
   background:#4caf50;
   border-radius:6px;
-  cursor:grab;
+  height:36px;
 }
 
 button {
-  margin-top:20px;
+  display:block;
+  margin:20px auto;
   font-size:1.2rem;
 }
-
 </style>
 </head>
 
@@ -62,45 +55,33 @@ button {
 <div class="loading">warte auf spieler…</div>
 
 <div id="ships"></div>
+<button id="rotateBtn">ROTATE</button>
 <button id="readyBtn" style="display:none">READY</button>
 
-<div id="boards" style="display:none">
-  <div>
-    <h3>DEIN FELD</h3>
-    <div id="myBoard" class="board"></div>
-  </div>
-  <div>
-    <h3>GEGNER</h3>
-    <div id="enemyBoard" class="board"></div>
-  </div>
-</div>
+<div id="board" class="board" style="display:none"></div>
 
 <script type="module">
 import { ref,get,set,onValue } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
 import { db } from "../firebasedata.js";
 import { getIP } from "../utils.js";
 
-/* ================= SETUP ================= */
+/* ================= CONFIG ================= */
 
 const SIZE = 10;
 const SHIPS = [5,4,3,3,2];
 let orientation = "h";
 
-document.addEventListener("keydown",e=>{
-  if(e.key==="r") orientation = orientation==="h"?"v":"h";
-});
+/* ================= UTILS ================= */
+
+const other = i => i===0?1:0;
+const genKey = (l=5)=>Array.from({length:l},()=>Math.random().toString(36)[2]).join("");
+
+/* ================= SESSION ================= */
 
 const IP = await getIP();
 const params = new URLSearchParams(location.search);
 let session = params.get("session");
 const GAME_PATH = "games/ship/sessions";
-
-/* ================= MATCHMAKING ================= */
-
-function genKey(len=5){
-  const c="abcdefghijklmnopqrstuvwxyz0123456789";
-  return Array.from({length:len},()=>c[Math.random()*c.length|0]).join("");
-}
 
 if(!session){
   const snap = await get(ref(db,GAME_PATH));
@@ -115,8 +96,12 @@ if(!session){
   if(!target){
     target=genKey();
     await set(ref(db,`${GAME_PATH}/${target}`),{
-      players:{}, started:false, phase:"place",
-      ready:{}, turn:0, winner:null
+      players:{},
+      started:false,
+      phase:"place",
+      ready:{},
+      activeBoard:0,
+      turn:1
     });
   }
   location.href=`?session=${target}`;
@@ -133,70 +118,52 @@ let myIndex=null;
 for(const [i,ip] of Object.entries(data.players||{}))
   if(ip===IP) myIndex=+i;
 
-if(myIndex==null){
-  myIndex = Object.keys(data.players||{}).length;
+if(myIndex===null){
+  myIndex=Object.keys(data.players||{}).length;
   await set(ref(db,`${GAME_PATH}/${session}/players/${myIndex}`),IP);
 }
 
-/* ================= UI BUILD ================= */
+/* ================= UI ================= */
 
-const myBoardEl = document.getElementById("myBoard");
-const enemyBoardEl = document.getElementById("enemyBoard");
+const boardEl = document.getElementById("board");
 const shipsEl = document.getElementById("ships");
 const readyBtn = document.getElementById("readyBtn");
+const rotateBtn = document.getElementById("rotateBtn");
 
-const myCells=[], enemyCells=[];
-
+const cells=[];
 for(let i=0;i<100;i++){
-  const a=document.createElement("div");
-  a.className="cell";
-  a.dataset.i=i;
-  myBoardEl.appendChild(a);
-  myCells.push(a);
-
-  const b=document.createElement("div");
-  b.className="cell";
-  b.dataset.i=i;
-  enemyBoardEl.appendChild(b);
-  enemyCells.push(b);
+  const c=document.createElement("div");
+  c.className="cell";
+  c.dataset.i=i;
+  boardEl.appendChild(c);
+  cells.push(c);
 }
 
-/* ================= SHIP PLACEMENT ================= */
+/* ================= PLACEMENT ================= */
 
+let shipQueue=[...SHIPS];
 let placedShips=[];
 
-for(const len of SHIPS){
-  const s=document.createElement("div");
-  s.className="ship";
-  s.style.width = orientation==="h"?`${len*36}px`:"36px";
-  s.style.height = orientation==="v"?`${len*36}px`:"36px";
-  s.draggable=true;
-  s.dataset.len=len;
-  shipsEl.appendChild(s);
+rotateBtn.onclick=()=>orientation=orientation==="h"?"v":"h";
 
-  s.ondragstart = e=>{
-    e.dataTransfer.setData("len",len);
-  };
-}
-
-myCells.forEach(c=>{
-  c.ondragover=e=>e.preventDefault();
-  c.ondrop=e=>{
-    const len=+e.dataTransfer.getData("len");
+cells.forEach(c=>{
+  c.onclick=()=>{
+    if(!shipQueue.length) return;
+    const len=shipQueue[0];
     const start=+c.dataset.i;
-    const cells=[];
+    const list=[];
 
     for(let k=0;k<len;k++){
-      const r = orientation==="h" ? start+k : start+k*SIZE;
-      if(r>=100) return;
-      cells.push(r);
+      const i=orientation==="h"?start+k:start+k*SIZE;
+      if(i>=100) return;
+      list.push(i);
     }
 
-    placedShips.push({cells,hits:Array(len).fill(false)});
-    cells.forEach(i=>myCells[i].classList.add("ship"));
-    shipsEl.innerHTML="";
-    if(placedShips.length===SHIPS.length)
-      readyBtn.style.display="block";
+    list.forEach(i=>cells[i].classList.add("ship"));
+    placedShips.push({cells:list});
+    shipQueue.shift();
+
+    if(!shipQueue.length) readyBtn.style.display="block";
   };
 });
 
@@ -209,6 +176,23 @@ readyBtn.onclick=async()=>{
   });
   await set(ref(db,`${GAME_PATH}/${session}/ready/${myIndex}`),true);
 };
+
+/* ================= RENDER ================= */
+
+function renderBoard(s){
+  cells.forEach(c=>c.className="cell");
+  const b=s.boards[s.activeBoard];
+  if(!b) return;
+
+  if(s.activeBoard===myIndex){
+    b.ships.forEach(ship=>ship.cells.forEach(i=>cells[i].classList.add("ship")));
+  }
+
+  b.shots.split("").forEach((v,i)=>{
+    if(v==="x") cells[i].classList.add("hit");
+    if(v==="o") cells[i].classList.add("miss");
+  });
+}
 
 /* ================= GAME LOOP ================= */
 
@@ -224,22 +208,34 @@ onValue(sessionRef,async snap=>{
   if(!s.started) return;
 
   document.querySelector(".loading").style.display="none";
-  document.getElementById("boards").style.display="flex";
+  boardEl.style.display="grid";
+  shipsEl.style.display="none";
+  rotateBtn.style.display="none";
+  readyBtn.style.display="none";
+
+  renderBoard(s);
 
   if(s.phase==="fight"){
-    enemyCells.forEach(c=>{
-      c.onclick=async()=>{
-        if(s.turn!==myIndex) return;
-        const i=+c.dataset.i;
-        const enemy = myIndex===0?1:0;
-        const board=s.boards[enemy];
-        if(board.shots[i]!=="-") return;
+    if(s.turn===myIndex && s.activeBoard!==myIndex){
+      cells.forEach(c=>{
+        c.onclick=async()=>{
+          const i=+c.dataset.i;
+          const board=structuredClone(s.boards[s.activeBoard]);
+          if(board.shots[i]!=="-") return;
 
-        board.shots = board.shots.substring(0,i)+"x"+board.shots.substring(i+1);
-        await set(ref(db,`${GAME_PATH}/${session}/boards/${enemy}`),board);
-        await set(ref(db,`${GAME_PATH}/${session}/turn`),enemy);
-      };
-    });
+          const hit=board.ships.some(ship=>ship.cells.includes(i));
+          board.shots=
+            board.shots.slice(0,i)+(hit?"x":"o")+board.shots.slice(i+1);
+
+          await set(ref(db,`${GAME_PATH}/${session}/boards/${s.activeBoard}`),board);
+
+          if(!hit){
+            await set(ref(db,`${GAME_PATH}/${session}/activeBoard`),myIndex);
+            await set(ref(db,`${GAME_PATH}/${session}/turn`),other(myIndex));
+          }
+        };
+      });
+    }
   }
 });
 </script>

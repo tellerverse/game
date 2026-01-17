@@ -13,7 +13,7 @@ body, html {
     padding:0;
     overflow:auto;
     height:auto;
-    font-family: 'Reem Kufi', 'Burbank';
+    font-family: 'Burbank', 'Reem Kufi';
     perspective: 100px;
         cursor: url('Assets/cursor/mouse.cur'), auto;
 }

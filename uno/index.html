@@ -9,14 +9,19 @@
 button { font-size:1.4rem;margin:4px;padding:6px }
 .active { outline:3px solid lime }
 .card {
-  width: 130px;
-  height: 200px;
+  width: 100px;
+  height: 150px;
   margin: 5px;
   border-radius: 8px;
   background: var(--card-color, #ffffff);
   border: 3px solid #000000;
   color: rgb(0, 0, 0);
   font-size: 3rem;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  display: flex;
+  transition: transform 0.4s ease, left 0.4s ease, top 0.4s ease;
 }
 .card:hover {
   transform: scale(1.1);
@@ -41,10 +46,23 @@ button { font-size:1.4rem;margin:4px;padding:6px }
 #hand {
   position: absolute;
   bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: flex-end; /* 🔥 wichtig */
+  left: 0;
+  right: 0;
+
+  display: grid;
+  gap: 12px; /* fester Abstand zwischen allen Karten */
+  justify-content: center; /* zentriert die Karten */
+  grid-auto-rows: 1fr;
+  padding: 0 12px;
+
+  /* Maximal 8 Karten pro Reihe, feste Breite für Karten */
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+}
+
+/* Überlappung für mehrere Reihen */
+#hand button {
+  margin-top: -30px; /* zweite Reihe überlappt leicht die erste */
+  transition: transform 0.2s ease;
 }
 /* 
 .card {
@@ -58,13 +76,67 @@ button { font-size:1.4rem;margin:4px;padding:6px }
   justify-content: center;
   transition: transform 0.4s ease, left 0.4s ease, top 0.4s ease;
 } */
+ /* ================= PLAYER BAR ================= */
+ #playerBar {
+   display: flex;
+   justify-content: center;
+   gap: 24px;
+   margin: 12px 0;
+ }
+
+ .player {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   font-size: 0.8rem;
+   color: #aaa;
+ }
+
+ .player.active {
+   color: white;
+ }
+
+ .stack {
+   display: flex;
+ }
+
+ .stack .back {
+   width: 26px;
+   height: 38px;
+   background: #333;
+   border: 2px solid #000;
+   border-radius: 4px;
+   margin-left: -10px;
+ }
+
+ .player.playing .stack .back {
+   background: #363;
+   border: 2px solid #0f0;
+ }
+
+ .player.playing .you {
+   color: #0f0;
+ }
+
+ .you {
+   font-size: 1.5rem;
+   margin-top: 2px;
+   color: rgb(0, 0, 0);
+ }
+
+ /* ================= DIRECTION ================= */
+ #direction {
+   text-align: center;
+   font-size: 1.2rem;
+   margin-top: 6px;
+ }
 </style>
 </head>
 <body>
 <header class="banner large">
   <h1>mor!tz<br><span style="font-size:1rem">&lt;html&gt;</span>uno<span style="font-size:1rem">&lt;/html&gt;</span></h1>
 </header>
-<div id="info"></div>
+<div id="playerBar"></div>
 <div id="game">
   <div id="center">
     <div id="drawPile" class="card">🂠</div>
@@ -281,11 +353,53 @@ async function drawCard() {
   await set(sessionRef,s);
 }
 
+function renderPlayerBar(s) {
+  const bar = document.getElementById("playerBar");
+  bar.innerHTML = "";
+
+  const playerCount = Object.keys(s.players).length;
+
+  for (let i = 0; i < playerCount; i++) {
+    const p = document.createElement("div");
+    p.className = "player" + (s.turn === i ? " playing" : "");
+
+    const stack = document.createElement("div");
+    stack.className = "stack";
+
+    for (let c = 0; c < 3; c++) {
+      const back = document.createElement("div");
+      back.className = "back";
+      stack.appendChild(back);
+    }
+
+    p.appendChild(stack);
+
+    if (i === myIndex) {
+      const you = document.createElement("div");
+      you.className = "you";
+      you.textContent = "You";
+      p.appendChild(you);
+    }
+
+    bar.appendChild(p);
+  }
+
+  // Richtungspfeil
+  let dir = document.getElementById("direction");
+  if (!dir) {
+    dir = document.createElement("div");
+    dir.id = "direction";
+    bar.after(dir);
+  }
+
+  dir.textContent = s.direction === 1 ? "➡️" : "⬅️";
+}
+
+
 /* ================== UI ================== */
 function render(s) {
-  document.getElementById("info").textContent =
-    s.winner!=null ? `Spieler ${s.winner} hat gewonnen`
-    : `Spieler ${s.turn} am Zug`;
+  renderPlayerBar(s);
+
 
   const pile = document.getElementById("pile");
   pile.textContent =`${s.topCard.value}`;
@@ -307,9 +421,10 @@ function render(s) {
     b.className = "card";
     b.textContent = c.value;
 
-    b.style.marginLeft = "-25px"; // Stack-Effekt
-    b.style.transform =
-    `rotate(${(Math.random()*10).toFixed(1)}deg)`;
+    b.style.marginLeft = "0"; // optional, Grid kümmert sich
+    b.style.marginTop = "0";   // wird durch CSS gesteuert
+    b.style.transform = `rotate(${(Math.random()*10).toFixed(1)}deg)`;
+    b.style.fontFamily = "'Burbank', 'Reem Kufi'";
     b.style.zIndex = i;
     b.style.setProperty("--card-color",
       c.color==="red" ? "#ff4444" :

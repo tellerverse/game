@@ -14,8 +14,8 @@ body, html {
     overflow:auto;
     height:auto;
     font-family: 'Burbank', 'Reem Kufi';
-    perspective: 100px;
-        cursor: url('Assets/cursor/mouse.cur'), auto;
+    /* perspective: 100px; */
+    cursor: url('Assets/cursor/mouse.cur'), auto;
 }
 a, button, button > div, a > div {
     cursor: url('Assets/cursor/mouse.cur'), pointer;

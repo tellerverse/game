@@ -8,6 +8,7 @@
 <style>
 button { font-size:1.4rem;margin:4px;padding:6px }
 .active { outline:3px solid lime }
+
 .card {
   width: 100px;
   height: 150px;
@@ -29,39 +30,39 @@ button { font-size:1.4rem;margin:4px;padding:6px }
   border: none;
   box-shadow: 0 0 10px #fff;
 }
-#game {
-  position: relative;
-  height: 80vh;
-}
+/* #game {
+  position: absolute;
+  height: 100%;
+  
+} */
 
 #center {
-  position: absolute;
-  top: 40%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  position: relative;
+  /* top: 40%; */
+  /* left: 50%; */
+  /* transform: translate(-50%, -50%); */
   display: flex;
   gap: 40px;
+  justify-content: center;
+  /* background: #000; */
 }
 
 #hand {
-  position: absolute;
-  bottom: 20px;
-  left: 0;
-  right: 0;
-
-  display: grid;
-  gap: 12px; /* fester Abstand zwischen allen Karten */
-  justify-content: center; /* zentriert die Karten */
-  grid-auto-rows: 1fr;
-  padding: 0 12px;
-
-  /* Maximal 8 Karten pro Reihe, feste Breite für Karten */
-  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  position: relative;
+  margin: 20px auto 0 auto;
+  width: 100%;
+  max-width: 1000px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  min-height: 160px;
+  /* background: #000; */
 }
 
-/* Überlappung für mehrere Reihen */
 #hand button {
-  margin-top: -30px; /* zweite Reihe überlappt leicht die erste */
+  width: 100px;   /* feste Breite */
+  height: 150px;  /* feste Höhe */
   transition: transform 0.2s ease;
 }
 /* 
@@ -82,6 +83,7 @@ button { font-size:1.4rem;margin:4px;padding:6px }
    justify-content: center;
    gap: 24px;
    margin: 12px 0;
+   /* background: #000; */
  }
 
  .player {
@@ -103,19 +105,19 @@ button { font-size:1.4rem;margin:4px;padding:6px }
  .stack .back {
    width: 26px;
    height: 38px;
-   background: #333;
+   background: #f8c0cb;
    border: 2px solid #000;
    border-radius: 4px;
    margin-left: -10px;
  }
 
  .player.playing .stack .back {
-   background: #363;
-   border: 2px solid #0f0;
+   background: #fcd;
+   border: 2px solid rgb(255, 0, 0);
  }
 
  .player.playing .you {
-   color: #0f0;
+   color: rgb(255, 0, 0);
  }
 
  .you {
@@ -137,14 +139,14 @@ button { font-size:1.4rem;margin:4px;padding:6px }
   <h1>mor!tz<br><span style="font-size:1rem">&lt;html&gt;</span>uno<span style="font-size:1rem">&lt;/html&gt;</span></h1>
 </header>
 <div id="playerBar"></div>
-<div id="game">
-  <div id="center">
-    <div id="drawPile" class="card">🂠</div>
-    <div id="pile" class="card"></div>
-  </div>
-
-  <div id="hand"></div>
+<!-- <div id="game"> -->
+<div id="center">
+  <div id="drawPile" class="card">🂠</div>
+  <div id="pile" class="card"></div>
 </div>
+<!-- </div> -->
+<div id="hand"></div>
+
 
 <button id="startBtn" style="display:none">Spiel starten</button>
 <script type="module">
@@ -155,7 +157,8 @@ import { getIP } from "../utils.js";
 /* ================== CONFIG ================== */
 const GAME_PATH = "games/uno/sessions";
 const MAX_PLAYERS = 5;
-
+let prevTopCard = null;
+let prevTurn = null;
 /* ================== KARTEN ================== */
 const COLORS = ["red","yellow","green","blue"];
 const VALUES = ["0","1","2","3","4","5","6","7","8","9","⏭️","🔄️","+2"];
@@ -233,18 +236,48 @@ myIndex = Number(myIndex);
 onValue(sessionRef, snap => {
   const s = snap.val();
   if (!s) return;
-
   const playerCount = Object.keys(s.players || {}).length;
-
-  // Start-Button sichtbar?
   startBtn.style.display =
     !s.started && myIndex === 0 && playerCount >= 2
       ? "block"
       : "none";
+  if (s.started) {
+    if (
+      prevTopCard &&
+      (s.topCard.value !== prevTopCard.value ||
+       s.topCard.color !== prevTopCard.color)
+    ) {
+      // 🔥 Karte wurde gelegt
+      const playerWhoPlayed = prevTurn;
+      if (playerWhoPlayed != null) {
+        animateFromPlayerStack(
+          playerWhoPlayed,
+          createGhostCard(s.topCard)
+        );
+      }
+    }
 
-  if (!s.started) return;
-  render(s);
+    prevTopCard = structuredClone(s.topCard);
+    prevTurn = s.turn;
+    render(s);
+  }
 });
+
+function createGhostCard(card) {
+  const el = document.createElement("div");
+  el.className = "card";
+  el.textContent = card.value;
+
+  el.style.setProperty("--card-color",
+    card.color==="red" ? "#ff4444" :
+    card.color==="yellow" ? "#ffff66" :
+    card.color==="green" ? "#66ff66" :
+    card.color==="blue" ? "#6666ff" :
+    "#ffffff"
+  );
+
+  return el;
+}
 
 startBtn.onclick = async () => {
   const snap = await get(sessionRef);
@@ -278,22 +311,35 @@ startBtn.onclick = async () => {
     winner: null
   });
 };
-function animateToPile(cardEl) {
-  const clone = cardEl.cloneNode(true);
-  const start = cardEl.getBoundingClientRect();
-  const end = document.getElementById("pile").getBoundingClientRect();
 
+function animateFromPlayerStack(playerIndex, cardEl) {
+  const pile = document.getElementById("pile");
+
+  const playerEl = document.querySelector(
+    `.player[data-player-index="${playerIndex}"]`
+  );
+  if (!playerEl) return;
+
+  const stackEl = playerEl.querySelector(".stack");
+  if (!stackEl) return;
+
+  const clone = cardEl.cloneNode(true);
   clone.style.position = "fixed";
-  clone.style.left = start.left + "px";
-  clone.style.top = start.top + "px";
   clone.style.margin = "0";
   clone.style.zIndex = 1000;
 
-  const rot = (Math.random() * 40 - 20).toFixed(1);
+  const start = stackEl.getBoundingClientRect();
+  const end = pile.getBoundingClientRect();
+
+  clone.style.left = start.left + start.width / 2 - 50 + "px";
+  clone.style.top = start.top + "px";
 
   document.body.appendChild(clone);
 
+  const rot = (Math.random() * 10 - 5).toFixed(1);
+
   requestAnimationFrame(() => {
+    clone.style.transition = "all 0.4s ease";
     clone.style.left = end.left + "px";
     clone.style.top = end.top + "px";
     clone.style.transform = `rotate(${rot}deg) scale(1.1)`;
@@ -362,6 +408,7 @@ function renderPlayerBar(s) {
   for (let i = 0; i < playerCount; i++) {
     const p = document.createElement("div");
     p.className = "player" + (s.turn === i ? " playing" : "");
+    p.dataset.playerIndex = i; // 🔥 WICHTIG
 
     const stack = document.createElement("div");
     stack.className = "stack";
@@ -414,32 +461,58 @@ function render(s) {
     );
 
   const handEl = document.getElementById("hand");
-  handEl.innerHTML="";
+  handEl.innerHTML = "";
 
-  s.players[myIndex].hand.forEach((c,i)=>{
-    const b = document.createElement("button");
-    b.className = "card";
-    b.textContent = c.value;
+  const cards = s.players[myIndex].hand;
+  const maxPerRow = 8;
+  let row = [];
 
-    b.style.marginLeft = "0"; // optional, Grid kümmert sich
-    b.style.marginTop = "0";   // wird durch CSS gesteuert
-    b.style.transform = `rotate(${(Math.random()*10).toFixed(1)}deg)`;
-    b.style.fontFamily = "'Burbank', 'Reem Kufi'";
-    b.style.zIndex = i;
-    b.style.setProperty("--card-color",
-      c.color==="red" ? "#ff4444" :
-      c.color==="yellow" ? "#ffff66" :
-      c.color==="green" ? "#66ff66" :
-      c.color==="blue" ? "#6666ff" :
-      "#ffffff"
-    );
-    if (canPlay(c,s.topCard) && s.turn===myIndex) b.classList.add("active");
-    b.onclick = async () => {
-      animateToPile(b);
-      await playCard(i);
-    };
-    handEl.appendChild(b);
-  });
+  // Reihen vorbereiten
+  for (let i = 0; i < cards.length; i++) {
+    row.push(cards[i]);
+
+    if (row.length === maxPerRow || i === cards.length - 1) {
+      const rowEl = document.createElement("div");
+      rowEl.className = "hand-row";
+      rowEl.style.display = "flex";
+      rowEl.style.gap = "12px";
+
+      row.forEach((c, idx) => {
+        const b = document.createElement("button");
+        b.className = "card";
+        b.textContent = c.value;
+
+        b.dataset.index = i - row.length + idx + 1;
+
+        b.style.transform = `rotate(${(Math.random() * 10 - 5).toFixed(1)}deg)`;
+        b.style.zIndex = idx;
+        b.style.fontFamily = "'Burbank', 'Reem Kufi'";
+
+        b.style.setProperty("--card-color",
+          c.color==="red" ? "#ff4444" :
+          c.color==="yellow" ? "#ffff66" :
+          c.color==="green" ? "#66ff66" :
+          c.color==="blue" ? "#6666ff" :
+          "#ffffff"
+        );
+
+        if (canPlay(c, s.topCard) && s.turn === myIndex) b.classList.add("active");
+
+        b.onclick = async () => {
+          const idx = Number(b.dataset.index);
+          animateFromPlayerStack(myIndex, b);
+          await playCard(idx);
+        };
+
+        rowEl.appendChild(b);
+      });
+
+      // Reihen stapeln, letzte Reihe oben
+      handEl.prepend(rowEl);
+      row = [];
+    }
+  }
+
 }
 
 document.getElementById("drawPile").onclick = drawCard;

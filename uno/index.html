@@ -18,7 +18,7 @@ button { font-size:1.4rem;margin:4px;padding:6px }
 <h2>Deine Karten</h2>
 <div id="hand"></div>
 <button id="draw">Ziehen</button>
-
+<button id="startBtn" style="display:none">Spiel starten</button>
 <script type="module">
 import { ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
 import { db } from "../firebasedata.js";
@@ -31,7 +31,7 @@ const MAX_PLAYERS = 5;
 /* ================== KARTEN ================== */
 const COLORS = ["red","yellow","green","blue"];
 const VALUES = ["0","1","2","3","4","5","6","7","8","9","skip","reverse","+2"];
-
+const startBtn = document.getElementById("startBtn");
 function createDeck() {
   const d = [];
   for (const c of COLORS) {
@@ -102,34 +102,48 @@ if (myIndex==null && Object.keys(data.players||{}).length < MAX_PLAYERS) {
 myIndex = Number(myIndex);
 
 /* ================== INIT ================== */
-onValue(sessionRef, async snap=>{
+onValue(sessionRef, snap => {
   const s = snap.val();
   if (!s) return;
 
-  if (!s.started && Object.keys(s.players).length >= 2 && myIndex===0) {
-    const deck = createDeck();
-    const players = structuredClone(s.players);
+  const playerCount = Object.keys(s.players || {}).length;
 
-    for (let i=0;i<7;i++)
-      for (const p of Object.values(players))
-        p.hand.push(deck.pop());
-
-    await set(sessionRef,{
-      started:true,
-      turn:0,
-      direction:1,
-      drawStack:0,
-      deck,
-      topCard: deck.pop(),
-      players,
-      winner:null
-    });
-    return;
-  }
+  // Start-Button sichtbar?
+  startBtn.style.display =
+    !s.started && myIndex === 0 && playerCount >= 2
+      ? "block"
+      : "none";
 
   if (!s.started) return;
   render(s);
 });
+startBtn.onclick = async () => {
+  const snap = await get(sessionRef);
+  const s = snap.val();
+
+  if (!s || s.started) return;
+  if (myIndex !== 0) return;
+
+  const deck = createDeck();
+  const players = structuredClone(s.players);
+
+  for (let i = 0; i < 7; i++) {
+    for (const p of Object.values(players)) {
+      p.hand.push(deck.pop());
+    }
+  }
+
+  await set(sessionRef, {
+    started: true,
+    turn: 0,
+    direction: 1,
+    drawStack: 0,
+    deck,
+    topCard: deck.pop(),
+    players,
+    winner: null
+  });
+};
 
 /* ================== LOGIK ================== */
 function canPlay(card, top) {

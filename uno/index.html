@@ -9,8 +9,8 @@
 button { font-size:1.4rem;margin:4px;padding:6px }
 .active { outline:3px solid lime }
 .card {
-  height: 100px;
-  width: 70px;
+  width: 130px;
+  height: 200px;
   margin: 5px;
   border-radius: 8px;
   background: var(--card-color, #ffffff);
@@ -18,6 +18,46 @@ button { font-size:1.4rem;margin:4px;padding:6px }
   color: rgb(0, 0, 0);
   font-size: 3rem;
 }
+.card:hover {
+  transform: scale(1.1);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 10px #fff;
+}
+#game {
+  position: relative;
+  height: 80vh;
+}
+
+#center {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  gap: 40px;
+}
+
+#hand {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: flex-end; /* 🔥 wichtig */
+}
+/* 
+.card {
+  width: 15vw;
+  height: calc(15vw * 1.4);
+  border-radius: 8px;
+  border: 3px solid #000;
+  font-size: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.4s ease, left 0.4s ease, top 0.4s ease;
+} */
 </style>
 </head>
 <body>
@@ -25,11 +65,14 @@ button { font-size:1.4rem;margin:4px;padding:6px }
   <h1>mor!tz<br><span style="font-size:1rem">&lt;html&gt;</span>uno<span style="font-size:1rem">&lt;/html&gt;</span></h1>
 </header>
 <div id="info"></div>
-<h2>Ablage</h2>
-<div id="pile" class="card"></div>
-<button id="draw" class="card">Ziehen</button>
-<h2>Deine Karten</h2>
-<div id="hand"></div>
+<div id="game">
+  <div id="center">
+    <div id="drawPile" class="card">🂠</div>
+    <div id="pile" class="card"></div>
+  </div>
+
+  <div id="hand"></div>
+</div>
 
 <button id="startBtn" style="display:none">Spiel starten</button>
 <script type="module">
@@ -163,6 +206,29 @@ startBtn.onclick = async () => {
     winner: null
   });
 };
+function animateToPile(cardEl) {
+  const clone = cardEl.cloneNode(true);
+  const start = cardEl.getBoundingClientRect();
+  const end = document.getElementById("pile").getBoundingClientRect();
+
+  clone.style.position = "fixed";
+  clone.style.left = start.left + "px";
+  clone.style.top = start.top + "px";
+  clone.style.margin = "0";
+  clone.style.zIndex = 1000;
+
+  const rot = (Math.random() * 40 - 20).toFixed(1);
+
+  document.body.appendChild(clone);
+
+  requestAnimationFrame(() => {
+    clone.style.left = end.left + "px";
+    clone.style.top = end.top + "px";
+    clone.style.transform = `rotate(${rot}deg) scale(1.1)`;
+  });
+
+  setTimeout(() => clone.remove(), 400);
+}
 
 /* ================== LOGIK ================== */
 function canPlay(card, top) {
@@ -223,6 +289,8 @@ function render(s) {
 
   const pile = document.getElementById("pile");
   pile.textContent =`${s.topCard.value}`;
+  pile.style.transform =
+  `rotate(${(Math.random()*10-5).toFixed(1)}deg)`;
   pile.style.setProperty("--card-color",
     s.topCard.color==="red" ? "#ff4444" :
     s.topCard.color==="yellow" ? "#ffff66" :
@@ -235,9 +303,14 @@ function render(s) {
   handEl.innerHTML="";
 
   s.players[myIndex].hand.forEach((c,i)=>{
-    const b=document.createElement("button");
-    b.classList.add("card");
-    b.textContent=`${c.value}`;
+    const b = document.createElement("button");
+    b.className = "card";
+    b.textContent = c.value;
+
+    b.style.marginLeft = "-25px"; // Stack-Effekt
+    b.style.transform =
+    `rotate(${(Math.random()*10).toFixed(1)}deg)`;
+    b.style.zIndex = i;
     b.style.setProperty("--card-color",
       c.color==="red" ? "#ff4444" :
       c.color==="yellow" ? "#ffff66" :
@@ -246,12 +319,16 @@ function render(s) {
       "#ffffff"
     );
     if (canPlay(c,s.topCard) && s.turn===myIndex) b.classList.add("active");
-    b.onclick=()=>playCard(i);
+    b.onclick = async () => {
+      animateToPile(b);
+      await playCard(i);
+    };
     handEl.appendChild(b);
   });
 }
 
-document.getElementById("draw").onclick=drawCard;
+document.getElementById("drawPile").onclick = drawCard;
+
 </script>
 </body>
 </html>

@@ -117,6 +117,7 @@ onValue(sessionRef, snap => {
   if (!s.started) return;
   render(s);
 });
+
 startBtn.onclick = async () => {
   const snap = await get(sessionRef);
   const s = snap.val();
@@ -126,6 +127,11 @@ startBtn.onclick = async () => {
 
   const deck = createDeck();
   const players = structuredClone(s.players);
+
+  // 🔴 KRITISCHER FIX
+  for (const p of Object.values(players)) {
+    if (!Array.isArray(p.hand)) p.hand = [];
+  }
 
   for (let i = 0; i < 7; i++) {
     for (const p of Object.values(players)) {

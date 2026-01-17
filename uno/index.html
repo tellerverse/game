@@ -159,6 +159,10 @@ const GAME_PATH = "games/uno/sessions";
 const MAX_PLAYERS = 5;
 let prevTopCard = null;
 let prevTurn = null;
+let pendingPlayAnimation = null;
+let pendingDrawAnimation = null;
+let prevHands = null;
+
 /* ================== KARTEN ================== */
 const COLORS = ["red","yellow","green","blue"];
 const VALUES = ["0","1","2","3","4","5","6","7","8","9","⏭️","🔄️","+2"];
@@ -233,6 +237,43 @@ if (myIndex==null && Object.keys(data.players||{}).length < MAX_PLAYERS) {
 myIndex = Number(myIndex);
 
 /* ================== INIT ================== */
+
+function animateFromPlayerStack(playerIndex, cardEl) {
+  const pile = document.getElementById("pile");
+
+  const playerEl = document.querySelector(
+    `.player[data-player-index="${playerIndex}"]`
+  );
+  if (!playerEl) return;
+
+  const stackEl = playerEl.querySelector(".stack");
+  if (!stackEl) return;
+
+  const clone = cardEl.cloneNode(true);
+  clone.style.position = "fixed";
+  clone.style.margin = "0";
+  clone.style.zIndex = 1000;
+
+  const start = stackEl.getBoundingClientRect();
+  const end = pile.getBoundingClientRect();
+
+  clone.style.left = start.left + start.width / 2 - 50 + "px";
+  clone.style.top = start.top + "px";
+
+  document.body.appendChild(clone);
+
+  const rot = (Math.random() * 10 - 5).toFixed(1);
+
+  requestAnimationFrame(() => {
+    clone.style.transition = "all 0.4s ease";
+    clone.style.left = end.left + "px";
+    clone.style.top = end.top + "px";
+    clone.style.transform = `rotate(${rot}deg) scale(1.1)`;
+  });
+
+  setTimeout(() => clone.remove(), 400);
+}
+
 onValue(sessionRef, snap => {
   const s = snap.val();
   if (!s) return;
@@ -241,25 +282,55 @@ onValue(sessionRef, snap => {
     !s.started && myIndex === 0 && playerCount >= 2
       ? "block"
       : "none";
-  if (s.started) {
-    if (
-      prevTopCard &&
-      (s.topCard.value !== prevTopCard.value ||
-       s.topCard.color !== prevTopCard.color)
-    ) {
-      // 🔥 Karte wurde gelegt
-      const playerWhoPlayed = prevTurn;
-      if (playerWhoPlayed != null) {
-        animateFromPlayerStack(
-          playerWhoPlayed,
-          createGhostCard(s.topCard)
-        );
-      }
-    }
+  if (!s || !s.started) return;
+  if (
+    prevTopCard &&
+    (s.topCard.value !== prevTopCard.value ||
+      s.topCard.color !== prevTopCard.color)
+  ) {
+    pendingPlayAnimation = {
+      player: prevTurn,
+      card: structuredClone(s.topCard)
+    };
+  }
 
-    prevTopCard = structuredClone(s.topCard);
-    prevTurn = s.turn;
-    render(s);
+  // Karte gezogen
+  for (const [i,p] of Object.entries(s.players)) {
+    const prev = prevHands?.[i]?.length ?? 0;
+    if (p.hand.length > prev) {
+      pendingDrawAnimation = {
+        player: Number(i),
+        count: p.hand.length - prev
+      };
+    }
+  }
+
+  prevHands = Object.fromEntries(
+    Object.entries(s.players).map(([i,p]) => [i, [...p.hand]])
+  );
+
+  prevTopCard = structuredClone(s.topCard);
+  prevTurn = s.turn;
+
+  render(s);
+
+  // 🔥 JETZT existiert der DOM
+  if (pendingPlayAnimation) {
+    animateFromPlayerStack(
+      pendingPlayAnimation.player,
+      createGhostCard(pendingPlayAnimation.card)
+    );
+    pendingPlayAnimation = null;
+  }
+
+  if (pendingDrawAnimation) {
+    const { player, count } = pendingDrawAnimation;
+    for (let i = 0; i < count; i++) {
+      setTimeout(() => {
+        animateDrawToPlayer(player);
+      }, i * 150); // jede Karte 150ms verzögert
+    }
+    pendingDrawAnimation = null;
   }
 });
 
@@ -312,41 +383,42 @@ startBtn.onclick = async () => {
   });
 };
 
-function animateFromPlayerStack(playerIndex, cardEl) {
-  const pile = document.getElementById("pile");
 
+
+function animateDrawToPlayer(playerIndex) {
+  const drawPile = document.getElementById("drawPile");
   const playerEl = document.querySelector(
     `.player[data-player-index="${playerIndex}"]`
   );
-  if (!playerEl) return;
+  if (!drawPile || !playerEl) return;
 
   const stackEl = playerEl.querySelector(".stack");
   if (!stackEl) return;
 
-  const clone = cardEl.cloneNode(true);
-  clone.style.position = "fixed";
-  clone.style.margin = "0";
-  clone.style.zIndex = 1000;
+  const ghost = document.createElement("div");
+  ghost.className = "card";
+  ghost.textContent = "🂠";
+  ghost.style.position = "fixed";
+  ghost.style.zIndex = 1000;
 
-  const start = stackEl.getBoundingClientRect();
-  const end = pile.getBoundingClientRect();
+  const start = drawPile.getBoundingClientRect();
+  const end = stackEl.getBoundingClientRect();
 
-  clone.style.left = start.left + start.width / 2 - 50 + "px";
-  clone.style.top = start.top + "px";
+  ghost.style.left = start.left + "px";
+  ghost.style.top = start.top + "px";
 
-  document.body.appendChild(clone);
-
-  const rot = (Math.random() * 10 - 5).toFixed(1);
+  document.body.appendChild(ghost);
 
   requestAnimationFrame(() => {
-    clone.style.transition = "all 0.4s ease";
-    clone.style.left = end.left + "px";
-    clone.style.top = end.top + "px";
-    clone.style.transform = `rotate(${rot}deg) scale(1.1)`;
+    ghost.style.transition = "all 0.4s ease";
+    ghost.style.left = end.left + "px";
+    ghost.style.top = end.top + "px";
+    ghost.style.transform = "scale(0.6)";
   });
 
-  setTimeout(() => clone.remove(), 400);
+  setTimeout(() => ghost.remove(), 400);
 }
+
 
 /* ================== LOGIK ================== */
 function canPlay(card, top) {
@@ -499,8 +571,6 @@ function render(s) {
         if (canPlay(c, s.topCard) && s.turn === myIndex) b.classList.add("active");
 
         b.onclick = async () => {
-          const idx = Number(b.dataset.index);
-          animateFromPlayerStack(myIndex, b);
           await playCard(idx);
         };
 

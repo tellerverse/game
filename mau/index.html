@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>UNO Multiplayer</title>
+<style>
+body { background:#111;color:#fff;font-family:sans-serif }
+button { font-size:1.4rem;margin:4px;padding:6px }
+.active { outline:3px solid lime }
+</style>
+</head>
+<body>
+
+<h1>UNO</h1>
+<div id="info"></div>
+<h2>Ablage</h2>
+<div id="pile"></div>
+<h2>Deine Karten</h2>
+<div id="hand"></div>
+<button id="draw">Ziehen</button>
+
+<script type="module">
+import { ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
+import { db } from "../firebasedata.js";
+import { getIP } from "../utils.js";
+
+/* ================== CONFIG ================== */
+const GAME_PATH = "games/uno/sessions";
+const MAX_PLAYERS = 5;
+
+/* ================== KARTEN ================== */
+const COLORS = ["red","yellow","green","blue"];
+const VALUES = ["0","1","2","3","4","5","6","7","8","9","skip","reverse","+2"];
+
+function createDeck() {
+  const d = [];
+  for (const c of COLORS) {
+    for (const v of VALUES) {
+      d.push({ color:c, value:v });
+      if (v !== "0") d.push({ color:c, value:v });
+    }
+  }
+  for (let i=0;i<4;i++) {
+    d.push({ color:"wild", value:"wild" });
+    d.push({ color:"wild", value:"+4" });
+  }
+  return shuffle(d);
+}
+
+const shuffle = a => a.sort(()=>Math.random()-0.5);
+
+/* ================== SESSION ================== */
+const IP = await getIP();
+const params = new URLSearchParams(location.search);
+let session = params.get("session");
+
+function genKey(len=5){
+  const c="abcdefghijklmnopqrstuvwxyz0123456789";
+  return Array.from({length:len},()=>c[Math.floor(Math.random()*c.length)]).join("");
+}
+
+if (!session) {
+  const snap = await get(ref(db, GAME_PATH));
+  let target=null;
+
+  if (snap.exists()) {
+    for (const [id,s] of Object.entries(snap.val())) {
+      if (!s.started && Object.keys(s.players||{}).length < MAX_PLAYERS) {
+        target=id; break;
+      }
+    }
+  }
+
+  if (!target) {
+    target=genKey();
+    await set(ref(db,`${GAME_PATH}/${target}`),{
+      started:false,
+      players:{}
+    });
+  }
+
+  location.href=`?session=${target}`;
+  throw "redirect";
+}
+
+const sessionRef = ref(db,`${GAME_PATH}/${session}`);
+const snap = await get(sessionRef);
+let data = snap.val();
+
+/* ================== PLAYER ================== */
+let myIndex = Object.entries(data.players||{})
+  .find(([_,p])=>p.ip===IP)?.[0];
+
+if (myIndex==null && Object.keys(data.players||{}).length < MAX_PLAYERS) {
+  myIndex = Object.keys(data.players||{}).length;
+  await set(ref(db,`${GAME_PATH}/${session}/players/${myIndex}`),{
+    ip:IP,
+    hand:[]
+  });
+}
+
+myIndex = Number(myIndex);
+
+/* ================== INIT ================== */
+onValue(sessionRef, async snap=>{
+  const s = snap.val();
+  if (!s) return;
+
+  if (!s.started && Object.keys(s.players).length >= 2 && myIndex===0) {
+    const deck = createDeck();
+    const players = structuredClone(s.players);
+
+    for (let i=0;i<7;i++)
+      for (const p of Object.values(players))
+        p.hand.push(deck.pop());
+
+    await set(sessionRef,{
+      started:true,
+      turn:0,
+      direction:1,
+      drawStack:0,
+      deck,
+      topCard: deck.pop(),
+      players,
+      winner:null
+    });
+    return;
+  }
+
+  if (!s.started) return;
+  render(s);
+});
+
+/* ================== LOGIK ================== */
+function canPlay(card, top) {
+  return (
+    card.color === top.color ||
+    card.value === top.value ||
+    card.color === "wild"
+  );
+}
+
+async function playCard(i) {
+  const snap = await get(sessionRef);
+  const s = snap.val();
+  if (s.turn !== myIndex || s.winner!=null) return;
+
+  const me = s.players[myIndex];
+  const card = me.hand[i];
+  if (!canPlay(card,s.topCard)) return;
+
+  me.hand.splice(i,1);
+  s.topCard = card;
+
+  if (card.value==="+2") s.drawStack+=2;
+  if (card.value==="+4") s.drawStack+=4;
+  if (card.value==="reverse") s.direction*=-1;
+  if (card.value==="skip")
+    s.turn = (s.turn + s.direction + Object.keys(s.players).length) % Object.keys(s.players).length;
+
+  if (card.color==="wild")
+    s.topCard.color = prompt("Farbe (red/yellow/green/blue)");
+
+  if (me.hand.length===0) s.winner=myIndex;
+
+  s.turn = (s.turn + s.direction + Object.keys(s.players).length) % Object.keys(s.players).length;
+  await set(sessionRef,s);
+}
+
+async function drawCard() {
+  const snap = await get(sessionRef);
+  const s = snap.val();
+  if (s.turn !== myIndex) return;
+
+  const me = s.players[myIndex];
+  const n = Math.max(1,s.drawStack||1);
+
+  for (let i=0;i<n;i++) me.hand.push(s.deck.pop());
+  s.drawStack=0;
+  s.turn = (s.turn + s.direction + Object.keys(s.players).length) % Object.keys(s.players).length;
+
+  await set(sessionRef,s);
+}
+
+/* ================== UI ================== */
+function render(s) {
+  document.getElementById("info").textContent =
+    s.winner!=null ? `Spieler ${s.winner} hat gewonnen`
+    : `Spieler ${s.turn} am Zug`;
+
+  document.getElementById("pile").textContent =
+    `${s.topCard.color} ${s.topCard.value}`;
+
+  const handEl = document.getElementById("hand");
+  handEl.innerHTML="";
+
+  s.players[myIndex].hand.forEach((c,i)=>{
+    const b=document.createElement("button");
+    b.textContent=`${c.color} ${c.value}`;
+    if (canPlay(c,s.topCard) && s.turn===myIndex) b.classList.add("active");
+    b.onclick=()=>playCard(i);
+    handEl.appendChild(b);
+  });
+}
+
+document.getElementById("draw").onclick=drawCard;
+</script>
+</body>
+</html>

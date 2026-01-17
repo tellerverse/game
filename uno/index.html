@@ -1,23 +1,36 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>UNO Multiplayer</title>
+<link rel="stylesheet" href="../style.css">
 <style>
-body { background:#111;color:#fff;font-family:sans-serif }
 button { font-size:1.4rem;margin:4px;padding:6px }
 .active { outline:3px solid lime }
+.card {
+  height: 100px;
+  width: 70px;
+  margin: 5px;
+  border-radius: 8px;
+  background: var(--card-color, #ffffff);
+  border: 3px solid #000000;
+  color: rgb(0, 0, 0);
+  font-size: 3rem;
+}
 </style>
 </head>
 <body>
-
-<h1>UNO</h1>
+<header class="banner large">
+  <h1>mor!tz<br><span style="font-size:1rem">&lt;html&gt;</span>uno<span style="font-size:1rem">&lt;/html&gt;</span></h1>
+</header>
 <div id="info"></div>
 <h2>Ablage</h2>
-<div id="pile"></div>
+<div id="pile" class="card"></div>
+<button id="draw" class="card">Ziehen</button>
 <h2>Deine Karten</h2>
 <div id="hand"></div>
-<button id="draw">Ziehen</button>
+
 <button id="startBtn" style="display:none">Spiel starten</button>
 <script type="module">
 import { ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
@@ -30,7 +43,7 @@ const MAX_PLAYERS = 5;
 
 /* ================== KARTEN ================== */
 const COLORS = ["red","yellow","green","blue"];
-const VALUES = ["0","1","2","3","4","5","6","7","8","9","skip","reverse","+2"];
+const VALUES = ["0","1","2","3","4","5","6","7","8","9","⏭️","🔄️","+2"];
 const startBtn = document.getElementById("startBtn");
 function createDeck() {
   const d = [];
@@ -174,8 +187,8 @@ async function playCard(i) {
 
   if (card.value==="+2") s.drawStack+=2;
   if (card.value==="+4") s.drawStack+=4;
-  if (card.value==="reverse") s.direction*=-1;
-  if (card.value==="skip")
+  if (card.value==="🔄️") s.direction*=-1;
+  if (card.value==="⏭️")
     s.turn = (s.turn + s.direction + Object.keys(s.players).length) % Object.keys(s.players).length;
 
   if (card.color==="wild")
@@ -208,15 +221,30 @@ function render(s) {
     s.winner!=null ? `Spieler ${s.winner} hat gewonnen`
     : `Spieler ${s.turn} am Zug`;
 
-  document.getElementById("pile").textContent =
-    `${s.topCard.color} ${s.topCard.value}`;
+  const pile = document.getElementById("pile");
+  pile.textContent =`${s.topCard.value}`;
+  pile.style.setProperty("--card-color",
+    s.topCard.color==="red" ? "#ff4444" :
+    s.topCard.color==="yellow" ? "#ffff66" :
+    s.topCard.color==="green" ? "#66ff66" :
+    s.topCard.color==="blue" ? "#6666ff" :
+      "#ffffff"
+    );
 
   const handEl = document.getElementById("hand");
   handEl.innerHTML="";
 
   s.players[myIndex].hand.forEach((c,i)=>{
     const b=document.createElement("button");
-    b.textContent=`${c.color} ${c.value}`;
+    b.classList.add("card");
+    b.textContent=`${c.value}`;
+    b.style.setProperty("--card-color",
+      c.color==="red" ? "#ff4444" :
+      c.color==="yellow" ? "#ffff66" :
+      c.color==="green" ? "#66ff66" :
+      c.color==="blue" ? "#6666ff" :
+      "#ffffff"
+    );
     if (canPlay(c,s.topCard) && s.turn===myIndex) b.classList.add("active");
     b.onclick=()=>playCard(i);
     handEl.appendChild(b);

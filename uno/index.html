@@ -526,8 +526,6 @@
         }
       }
 
-
-      /* ================== LOGIK ================== */
       function canPlay(card, top) {
         return (
           card.color === top.color ||
@@ -558,7 +556,6 @@
           const chosenColor = await chooseColor();
           s.topCard.color = chosenColor;
         }
-
 
         if (me.hand.length===0) s.winner=myIndex;
 

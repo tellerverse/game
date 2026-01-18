@@ -87,7 +87,6 @@
                     var(--color) 60%,
                     black
                 );
-
             }
 
             .icon {
@@ -96,6 +95,20 @@
                 height: 100%;
                 /* opacity: .85; */
             }
+
+            .clearsession {
+                position: absolute;
+                left: 50px;
+                padding: 10px 20px;
+                font-size: 1rem;
+                background: #fed3ff51;
+                color: #fb00ff86;
+                border: 3px solid #fb00ff3d;
+                border-radius: 10px;
+                font-family: 'Burbank';
+                cursor: pointer;
+            }
+
             @media (max-width: 600px) {
                 .games {
                     grid-template-columns: repeat(2, 1fr);
@@ -151,6 +164,8 @@
             </div>
         </main>
 
+        <button class="clearsession">clear all sessions</button>
+
         <footer>
             <div class="footercontent">
                 <a href="https://tenor.com/de/view/nope-gif-6204613169731376469" style="color: #fb00ff86"><span style='font-size:1.4rem'>&#x2197; Help</span></a><br><br>
@@ -161,7 +176,7 @@
         </footer>
 
         <script type="module">
-            import { ref, get, onValue } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
+            import { ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
             import { db } from "./firebasedata.js";
 
             document.querySelectorAll(".game").forEach(el => {
@@ -215,10 +230,16 @@
                     const game = el.dataset.game;
                     if (!dot) return;
                     if (waitingPerGame[game] != "") dot.style.background = waitingPerGame[game]
-
-                    // dot.classList.toggle("online", !!waitingPerGame[game]);
-                    // console.log(`game=${game} waiting=${!!waitingPerGame[game]}`);
                 });
+            });
+
+            document.querySelectorAll(".clearsession").forEach(el => {
+                el.onclick = () => {
+                    for (const gameEl of document.querySelectorAll(".game")) {
+                        const gameId = gameEl.dataset.game;
+                        set(ref(db, `games/${gameId}/sessions`), null);
+                    };
+                };
             });
         </script>
     </body>

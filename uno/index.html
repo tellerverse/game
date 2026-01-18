@@ -6,9 +6,15 @@
     <title>uno</title>
     <link rel="stylesheet" href="../style.css">
     <style>
-      button { font-size:1.4rem;margin:4px;padding:6px }
+      button {
+        font-size:1.4rem;
+        margin:4px;
+        padding:6px;
+      }
 
-      .active { outline:3px solid lime }
+      .active { 
+        outline: 3px solid lime
+      }
 
       .card {
         width: 100px;
@@ -28,10 +34,9 @@
         display: flex;
         transition: transform 0.4s ease, left 0.4s ease, top 0.4s ease;
       }
+
       .card:hover {
         cursor: pointer;
-
-
         box-shadow:
           0 0 0 5px rgb(255, 0, 0);
       }
@@ -165,10 +170,10 @@
         cursor: pointer;
       }
 
-      .color-card div[data-color="red"]    { background:#ff4444; }
+      .color-card div[data-color="red"] { background:#ff4444; }
       .color-card div[data-color="yellow"] { background:#ffff66; }
-      .color-card div[data-color="green"]  { background:#66ff66; }
-      .color-card div[data-color="blue"]   { background:#6666ff; }
+      .color-card div[data-color="green"] { background:#66ff66; }
+      .color-card div[data-color="blue"] { background:#6666ff; }
 
       .color-card div:hover {
         filter: brightness(1.2);
@@ -200,7 +205,6 @@
       import { db } from "../firebasedata.js";
       import { getIP } from "../utils.js";
 
-
       const GAME_PATH = "games/uno/sessions";
       const MAX_PLAYERS = 5;
       let prevTopCard = null;
@@ -210,7 +214,7 @@
       let prevHands = null;
       let lastState = null;
       let pendingColorResolve = null;
-
+      
       const COLORS = ["red","yellow","green","blue"];
       const VALUES = ["0","1","2","3","4","5","6","7","8","9","skip","reverse","+2"];
       const startBtn = document.getElementById("startBtn");

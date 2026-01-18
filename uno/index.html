@@ -557,22 +557,22 @@ function applyCardContent(el, card) {
 
   switch (card.value) {
     case "skip":
-      img.src = "/assets/cards/skip.png";
+      img.src = "../assets/cards/skip.png";
       el.appendChild(img);
       break;
 
     case "reverse":
-      img.src = "/assets/cards/reverse.png";
+      img.src = "../assets/cards/reverse.png";
       el.appendChild(img);
       break;
 
     case "wild":
-      img.src = "/assets/cards/wild.png";
+      img.src = "../assets/cards/wild.png";
       el.appendChild(img);
       break;
 
     // case "+4":
-    //   img.src = "/assets/cards/+4.png";
+    //   img.src = "../assets/cards/+4.png";
     //   el.appendChild(img);
     //   break;
 
@@ -698,7 +698,7 @@ function render(s) {
   drawPile.innerHTML = "";
 
   const backImg = document.createElement("img");
-  backImg.src = "/assets/cards/back.png";
+  backImg.src = "../assets/cards/back.png";
   backImg.style.width = "100%";
   backImg.style.height = "100%";
   backImg.style.objectFit = "contain";

@@ -1,797 +1,729 @@
 <!DOCTYPE html>
 <html lang="de">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>UNO Multiplayer</title>
-<link rel="stylesheet" href="../style.css">
-<style>
-button { font-size:1.4rem;margin:4px;padding:6px }
-.active { outline:3px solid lime }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>uno</title>
+    <link rel="stylesheet" href="../style.css">
+    <style>
+      button { font-size:1.4rem;margin:4px;padding:6px }
 
-.card {
-  width: 100px;
-  height: 150px;
-  margin: 5px;
-  border-radius: 8px;
-  background: var(--card-color, #ffffff);
-  border: 4px solid #000;
-  outline: 3px solid #000;
-  outline-offset: -12px; /* feinjustieren */
+      .active { outline:3px solid lime }
 
-  color: rgb(0, 0, 0);
-  font-size: 5rem;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  display: flex;
-  transition: transform 0.4s ease, left 0.4s ease, top 0.4s ease;
-}
-.card:hover {
-  cursor: pointer;
+      .card {
+        width: 100px;
+        height: 150px;
+        margin: 5px;
+        border-radius: 8px;
+        background: var(--card-color, #ffffff);
+        border: 4px solid #000;
+        outline: 3px solid #000;
+        outline-offset: -12px;
 
-
-  box-shadow:
-    0 0 0 5px rgb(255, 0, 0);
-}
-/* #game {
-  position: absolute;
-  height: 100%;
-  
-} */
-
-#center {
-  position: relative;
-  /* top: 40%; */
-  /* left: 50%; */
-  /* transform: translate(-50%, -50%); */
-  display: flex;
-  gap: 40px;
-  justify-content: center;
-  /* background: #000; */
-}
-
-#hand {
-  position: relative;
-  display: flex;
-  flex-direction: column;   /* 🔥 Reihen untereinander */
-  align-items: center;
-  margin: 20px auto 0 auto;
-  width: 100%;
-  /* max-width: 1000px; */
-  /* flex-wrap: wrap; */
-  /* justify-content: center; */
-  /* gap: 12px; */
-  min-height: 160px;
-  /* background: #000; */
-  }
-
-  #hand button {
-    width: 100px;   /* feste Breite */
-    height: 150px;  /* feste Höhe */
-    transition: transform 0.2s ease;
-  }
-  /* 
-  .card {
-  width: 15vw;
-  height: calc(15vw * 1.4);
-  border-radius: 8px;
-  border: 3px solid #000;
-  font-size: 3rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.4s ease, left 0.4s ease, top 0.4s ease;
-  } */
-  /* ================= PLAYER BAR ================= */
-  #playerBar {
-    display: flex;
-    justify-content: center;
-    gap: 75px;
-    margin: 12px 0;
-    /* background: #000; */
-  }
-
-  .player {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    font-size: 0.8rem;
-    color: #aaa;
-  }
-
-  .player.active {
-    color: white;
-  }
-
-  .stack {
-    position: relative;
-    width: 60px; /* passend für 3 Karten */
-    height: 40px;
-    display: flex;
-    justify-content: center; /* mittlere Karte zentriert */
-    align-items: flex-start;
-  }
-
-  /* .stack .back {
-    width: 26px;
-    height: 38px;
-    background: #f8c0cb;
-    border: 2px solid #6c555a;
-    border-radius: 4px;
-    margin-left: -10px;
-  } */
-
-  .stack .back {
-    width: 26px;
-    height: 38px;
-    background: #f8c0cb;
-    border: 2px solid #6c555a;
-    border-radius: 4px;
-    position: absolute;
-    /* left: 50%; */
-    /* top: 0; */
-    /* transform-origin: bottom center; */
-    /* margin-left: -13px; */
-  }
-
-  .player.playing .stack .back {
-    background: rgb(255, 168, 197);
-    border: 2px solid rgb(154, 0, 0);
-  }
-
-  .player.playing .you {
-    color: rgb(154, 0, 0);
-  }
-
-  .you {
-    text-align: center;
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 1.2rem;
-    font-weight: bold;
-    pointer-events: none;
-    font-size: 2rem;
-    margin-top: 2px;
-    color: #6c555a;
-    z-index: 10;
-  }
-
-.hand-row {
-  position: relative;
-  height: 160px;
-  margin: 0 auto;
-}
-
-.hand-row:not(:last-child) {
-  margin-bottom: -80px;        /* 🔥 Überlappt nach unten */
-}
-
-  /* ================= DIRECTION ================= */
-  #direction {
-    text-align: center;
-    font-size: 1.2rem;
-    margin-top: 6px;
-  }
-
-  .overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.7);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-  }
-
-  .overlay.hidden {
-    display: none;
-  }
-
-  .color-card {
-    width: 300px;
-    height: 450px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
-    border-radius: 16px;
-    overflow: hidden;
-    border: 6px solid black;
-  }
-
-  .color-card div {
-    cursor: pointer;
-  }
-
-  .color-card div[data-color="red"]    { background:#ff4444; }
-  .color-card div[data-color="yellow"] { background:#ffff66; }
-  .color-card div[data-color="green"]  { background:#66ff66; }
-  .color-card div[data-color="blue"]   { background:#6666ff; }
-
-  .color-card div:hover {
-    filter: brightness(1.2);
-  }
-</style>
-</head>
-<body>
-<header class="banner large">
-  <h1>mor!tz<br><span style="font-size:1rem">&lt;html&gt;</span>uno<span style="font-size:1rem">&lt;/html&gt;</span></h1>
-</header>
-<div id="playerBar"></div>
-<!-- <div id="game"> -->
-<div id="center">
-  <div id="drawPile" class="card"></div>
-  <div id="pile" class="card"></div>
-</div>
-<!-- </div> -->
-<div id="hand"></div>
-<div id="colorOverlay" class="overlay hidden">
-  <div class="color-card">
-    <div data-color="red"></div>
-    <div data-color="yellow"></div>
-    <div data-color="green"></div>
-    <div data-color="blue"></div>
-  </div>
-</div>
-
-<button id="startBtn" style="display:none">Spiel starten</button>
-<script type="module">
-import { ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
-import { db } from "../firebasedata.js";
-import { getIP } from "../utils.js";
-
-/* ================== CONFIG ================== */
-const GAME_PATH = "games/uno/sessions";
-const MAX_PLAYERS = 5;
-let prevTopCard = null;
-let prevTurn = null;
-let pendingPlayAnimation = null;
-let pendingDrawAnimation = null;
-let prevHands = null;
-let lastState = null;
-let pendingColorResolve = null;
-/* ================== KARTEN ================== */
-const COLORS = ["red","yellow","green","blue"];
-const VALUES = ["0","1","2","3","4","5","6","7","8","9","skip","reverse","+2"];
-const startBtn = document.getElementById("startBtn");
-
-function chooseColor() {
-  return new Promise(resolve => {
-    const overlay = document.getElementById("colorOverlay");
-    overlay.classList.remove("hidden");
-    pendingColorResolve = resolve;
-  });
-}
-
-document.querySelectorAll(".color-card div").forEach(el => {
-  el.onclick = () => {
-    const color = el.dataset.color;
-    document.getElementById("colorOverlay").classList.add("hidden");
-    pendingColorResolve?.(color);
-    pendingColorResolve = null;
-  };
-});
-
-function createDeck() {
-  const d = [];
-  for (const c of COLORS) {
-    for (const v of VALUES) {
-      d.push({ color:c, value:v });
-      if (v !== "0") d.push({ color:c, value:v });
-    }
-  }
-  for (let i=0;i<4;i++) {
-    d.push({ color:"white", value:"wild" });
-    d.push({ color:"white", value:"+4" });
-  }
-  return shuffle(d);
-}
-
-const shuffle = a => a.sort(()=>Math.random()-0.5);
-
-/* ================== SESSION ================== */
-const IP = await getIP();
-const params = new URLSearchParams(location.search);
-let session = params.get("session");
-
-function genKey(len=5){
-  const c="abcdefghijklmnopqrstuvwxyz0123456789";
-  return Array.from({length:len},()=>c[Math.floor(Math.random()*c.length)]).join("");
-}
-
-if (!session) {
-  const snap = await get(ref(db, GAME_PATH));
-  let target=null;
-
-  if (snap.exists()) {
-    for (const [id,s] of Object.entries(snap.val())) {
-      if (!s.started && Object.keys(s.players||{}).length < MAX_PLAYERS) {
-        target=id; break;
+        color: rgb(0, 0, 0);
+        font-size: 5rem;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        display: flex;
+        transition: transform 0.4s ease, left 0.4s ease, top 0.4s ease;
       }
-    }
-  }
-
-  if (!target) {
-    target=genKey();
-    await set(ref(db,`${GAME_PATH}/${target}`),{
-      started:false,
-      players:{}
-    });
-  }
-
-  location.href=`?session=${target}`;
-  throw "redirect";
-}
-
-const sessionRef = ref(db,`${GAME_PATH}/${session}`);
-const snap = await get(sessionRef);
-let data = snap.val();
-
-/* ================== PLAYER ================== */
-let myIndex = Object.entries(data.players||{})
-  .find(([_,p])=>p.ip===IP)?.[0];
-
-if (myIndex==null && Object.keys(data.players||{}).length < MAX_PLAYERS) {
-  myIndex = Object.keys(data.players||{}).length;
-  await set(ref(db,`${GAME_PATH}/${session}/players/${myIndex}`),{
-    ip:IP,
-    hand:[]
-  });
-}
-
-myIndex = Number(myIndex);
-
-/* ================== INIT ================== */
-
-function animateFromPlayerStack(playerIndex, cardEl) {
-  const pile = document.getElementById("pile");
-  const playerEl = document.querySelector(
-    `.player[data-player-index="${playerIndex}"]`
-  );
-  if (!playerEl) return;
-
-  const stackEl = playerEl.querySelector(".stack");
-  if (!stackEl) return;
-
-  const clone = cardEl.cloneNode(true);
-  clone.style.position = "fixed";
-  clone.style.margin = "0";
-  clone.style.zIndex = 1000;
-
-  const start = stackEl.getBoundingClientRect();
-  const end = pile.getBoundingClientRect();
-
-  clone.style.left = start.left + start.width / 2 - 50 + "px";
-  clone.style.top = start.top + "px";
-
-  // 🔥 START: mini
-  clone.style.transform = "scale(0.2) rotate(0deg)";
-
-  document.body.appendChild(clone);
-
-  const rot = (Math.random() * 10 - 5).toFixed(1);
-
-  requestAnimationFrame(() => {
-    clone.style.transition = "all 0.4s cubic-bezier(.2,.8,.2,1)";
-    clone.style.left = end.left + "px";
-    clone.style.top = end.top + "px";
-    clone.style.transform = `scale(1.1) rotate(${rot}deg)`;
-  });
-
-  setTimeout(() => clone.remove(), 400);
-}
-
-onValue(sessionRef, snap => {
-  const s = snap.val();
-  if (!s) return;
-
-  // Sicherstellen, dass jeder Spieler eine Hand hat
-  for (const p of Object.values(s.players)) {
-    if (!Array.isArray(p.hand)) p.hand = [];
-  }
-
-  // prevHands initialisieren, falls noch undefined
-  prevHands = prevHands || {};
-  for (const [i, p] of Object.entries(s.players)) {
-    if (!Array.isArray(prevHands[i])) prevHands[i] = [];
-  }
-
-  const playerCount = Object.keys(s.players).length;
-  startBtn.style.display =
-    !s.started && myIndex === 0 && playerCount >= 2
-      ? "block"
-      : "none";
-
-  if (!s.started) return;
-
-  // Karte gespielt Animation
-  if (
-    prevTopCard &&
-    (s.topCard.value !== prevTopCard.value || s.topCard.color !== prevTopCard.color)
-  ) {
-    pendingPlayAnimation = {
-      player: prevTurn,
-      card: structuredClone(s.topCard)
-    };
-  }
-
-  // Karte gezogen Animation
-  for (const [i, p] of Object.entries(s.players)) {
-    const prev = prevHands[i]?.length ?? 0;
-    if (p.hand.length > prev) {
-      pendingDrawAnimation = {
-        player: Number(i),
-        count: p.hand.length - prev
-      };
-    }
-  }
-
-  prevHands = Object.fromEntries(
-    Object.entries(s.players).map(([i, p]) => [i, [...p.hand]])
-  );
-
-  prevTopCard = structuredClone(s.topCard);
-  prevTurn = s.turn;
-
-  render(s);
-
-  // Animationen
-  if (pendingPlayAnimation) {
-    animateFromPlayerStack(
-      pendingPlayAnimation.player,
-      createGhostCard(pendingPlayAnimation.card)
-    );
-    pendingPlayAnimation = null;
-  }
-
-  if (pendingDrawAnimation) {
-    const { player, count } = pendingDrawAnimation;
-    for (let i = 0; i < count; i++) {
-      setTimeout(() => animateDrawToPlayer(player), i * 150);
-    }
-    pendingDrawAnimation = null;
-  }
-
-  lastState = s;
-});
-
-
-function createGhostCard(card) {
-  const el = document.createElement("div");
-  el.className = "card";
-  applyCardContent(el, card);
-
-  el.style.setProperty("--card-color",
-    card.color==="red" ? "#ff4444" :
-    card.color==="yellow" ? "#ffff66" :
-    card.color==="green" ? "#66ff66" :
-    card.color==="blue" ? "#6666ff" :
-    "#ffffff"
-  );
-
-  return el;
-}
-
-startBtn.onclick = async () => {
-  const snap = await get(sessionRef);
-  const s = snap.val();
-
-  if (!s || s.started) return;
-  if (myIndex !== 0) return;
-
-  const deck = createDeck();
-  const players = structuredClone(s.players);
-
-  // 🔴 KRITISCHER FIX
-  for (const p of Object.values(players)) {
-    if (!Array.isArray(p.hand)) p.hand = [];
-  }
-
-  for (let i = 0; i < 7; i++) {
-    for (const p of Object.values(players)) {
-      p.hand.push(deck.pop());
-    }
-  }
-
-  await set(sessionRef, {
-    started: true,
-    turn: 0,
-    direction: 1,
-    drawStack: 0,
-    deck,
-    topCard: deck.pop(),
-    players,
-    winner: null
-  });
-};
-
-
-
-function animateDrawToPlayer(playerIndex) {
-  const drawPile = document.getElementById("drawPile");
-  const playerEl = document.querySelector(
-    `.player[data-player-index="${playerIndex}"]`
-  );
-  if (!drawPile || !playerEl) return;
-
-  const stackEl = playerEl.querySelector(".stack");
-  if (!stackEl) return;
-
-  const ghost = document.createElement("div");
-  ghost.className = "card";
-  ghost.textContent = "🂠";
-  ghost.style.position = "fixed";
-  ghost.style.zIndex = 1000;
-
-  const start = drawPile.getBoundingClientRect();
-  const end = stackEl.getBoundingClientRect();
-
-  ghost.style.left = start.left + "px";
-  ghost.style.top = start.top + "px";
-
-  // 🔥 START: sehr klein
-  ghost.style.transform = "scale(0.2)";
-
-  document.body.appendChild(ghost);
-
-  requestAnimationFrame(() => {
-    ghost.style.transition = "all 0.4s cubic-bezier(.2,.8,.2,1)";
-    ghost.style.left = end.left + end.width / 2 - 50 + "px";
-    ghost.style.top = end.top + "px";
-    ghost.style.transform = "scale(0.6)";
-  });
-
-  setTimeout(() => ghost.remove(), 400);
-}
-
-function applyCardContent(el, card) {
-  el.innerHTML = ""; // immer reset
-
-  const img = document.createElement("img");
-  img.style.width = "90%";
-  img.style.height = "90%";
-  img.style.objectFit = "contain";
-  img.draggable = false;
-
-  switch (card.value) {
-    case "skip":
-      img.src = "../assets/cards/skip.png";
-      el.appendChild(img);
-      break;
-
-    case "reverse":
-      img.src = "../assets/cards/reverse.png";
-      el.appendChild(img);
-      break;
-
-    case "wild":
-      img.src = "../assets/cards/wild.png";
-      el.appendChild(img);
-      break;
-
-    // case "+4":
-    //   img.src = "../assets/cards/+4.png";
-    //   el.appendChild(img);
-    //   break;
-
-    default:
-      el.textContent = card.value;
-  }
-}
-
-
-/* ================== LOGIK ================== */
-function canPlay(card, top) {
-  return (
-    card.color === top.color ||
-    card.value === top.value ||
-    card.color === "white"
-  );
-}
-
-async function playCard(i) {
-  const snap = await get(sessionRef);
-  const s = snap.val();
-  if (s.turn !== myIndex || s.winner!=null) return;
-
-  const me = s.players[myIndex];
-  const card = me.hand[i];
-  if (!canPlay(card,s.topCard)) return;
-
-  me.hand.splice(i,1);
-  s.topCard = card;
-
-  if (card.value==="+2") s.drawStack+=2;
-  if (card.value==="+4") s.drawStack+=4;
-  if (card.value==="reverse") s.direction*=-1;
-  if (card.value==="skip")
-    s.turn = (s.turn + s.direction + Object.keys(s.players).length) % Object.keys(s.players).length;
-
-  if (card.color === "white") {
-    const chosenColor = await chooseColor();
-    s.topCard.color = chosenColor;
-  }
-
-
-  if (me.hand.length===0) s.winner=myIndex;
-
-  s.turn = (s.turn + s.direction + Object.keys(s.players).length) % Object.keys(s.players).length;
-  await set(sessionRef,s);
-}
-
-async function drawCard() {
-  const snap = await get(sessionRef);
-  const s = snap.val();
-  if (s.turn !== myIndex) return;
-
-  const me = s.players[myIndex];
-  const n = Math.max(1,s.drawStack||1);
-
-  for (let i=0;i<n;i++) me.hand.push(s.deck.pop());
-  s.drawStack=0;
-  s.turn = (s.turn + s.direction + Object.keys(s.players).length) % Object.keys(s.players).length;
-
-  await set(sessionRef,s);
-}
-
-function renderPlayerBar(s) {
-  const bar = document.getElementById("playerBar");
-  bar.innerHTML = "";
-
-  const playerCount = Object.keys(s.players).length;
-
-  for (let i = 0; i < playerCount; i++) {
-    const p = document.createElement("div");
-    p.className = "player" + (s.turn === i ? " playing" : "");
-    p.dataset.playerIndex = i;
-
-    const stack = document.createElement("div");
-    stack.className = "stack";
-
-    // Kartenrücken
-    const stackCount = Math.min(3, s.players[i].hand.length); // maximal 3 anzeigen
-    const angles = [-15, 0, 15]; // links schräg, mittig gerade, rechts schräg
-    const offsetsX = [-10, 0, 10];
-    const offsetsY = [0, -2, 0];
-
-    for (let c = 0; c < stackCount; c++) {
-      const back = document.createElement("div");
-      back.className = "back";
-
-      back.style.transform = `translateX(${offsetsX[c]}px) translateY(${offsetsY[c]}px) rotate(${angles[c]}deg)`;
-      back.style.zIndex = c; // mittlere Karte oben
-      stack.appendChild(back);
-    }
-
-    // 🔥 "You" INSIDE stack (nur für dich)
-    if (i === myIndex) {
-      const you = document.createElement("div");
-      you.className = "you";
-      you.textContent = "You";
-      stack.appendChild(you);
-    }
-
-    // 🔥 Stack IMMER anhängen
-    p.appendChild(stack);
-    bar.appendChild(p);
-  }
-
-
-  // Richtungspfeil
-  let dir = document.getElementById("direction");
-  if (!dir) {
-    dir = document.createElement("div");
-    dir.id = "direction";
-    bar.after(dir);
-  }
-
-  dir.textContent = s.direction === 1 ? "➡️" : "⬅️";
-}
-
-
-/* ================== UI ================== */
-function render(s) {
-  renderPlayerBar(s);
-  const drawPile = document.getElementById("drawPile");
-  drawPile.innerHTML = "";
-
-  const backImg = document.createElement("img");
-  backImg.src = "../assets/cards/back.png";
-  backImg.style.width = "100%";
-  backImg.style.height = "100%";
-  backImg.style.objectFit = "contain";
-  backImg.draggable = false;
-  drawPile.style.setProperty("--card-color", "#000");
-  drawPile.style.outline = "none";
-  drawPile.appendChild(backImg);
-
-  const pile = document.getElementById("pile");
-  pile.innerHTML = "";
-  applyCardContent(pile, s.topCard);
-  pile.style.transform =
-  `rotate(${(Math.random()*10-5).toFixed(1)}deg)`;
-  pile.style.setProperty("--card-color",
-    s.topCard.color==="red" ? "#ff4444" :
-    s.topCard.color==="yellow" ? "#ffff66" :
-    s.topCard.color==="green" ? "#66ff66" :
-    s.topCard.color==="blue" ? "#6666ff" :
-      "#ffffff"
-    );
-
-  const handEl = document.getElementById("hand");
-  handEl.innerHTML = "";
-
-  const cards = s.players[myIndex].hand;
-
-  const CARD_WIDTH = 100;
-  const CARD_GAP = 18;
-  const MAX_PER_ROW = 8;
-
-  const containerWidth = handEl.clientWidth;
-  const fitPerRow = Math.floor(
-    (containerWidth + CARD_GAP) / (CARD_WIDTH + CARD_GAP)
-  );
-
-  const cardsPerRow = Math.min(MAX_PER_ROW, Math.max(1, fitPerRow));
-
-  let row = [];
-
-  for (let i = 0; i < cards.length; i++) {
-    row.push(cards[i]);
-
-    if (row.length === cardsPerRow || i === cards.length - 1) {
-      const rowEl = document.createElement("div");
-      rowEl.className = "hand-row";
-      rowEl.style.width =
-        `${row.length * (CARD_WIDTH + CARD_GAP) - CARD_GAP}px`;
-
-      row.forEach((c, idx) => {
-        const b = document.createElement("button");
-        b.className = "card";
-        applyCardContent(b, c);
-
-        const realIndex = i - row.length + idx + 1;
-        const rot = (Math.random() * 6 - 3).toFixed(1);
-
-        b.style.position = "absolute";
-        b.style.left = `${idx * (CARD_WIDTH + CARD_GAP)}px`;
-        b.style.transform = `rotate(${rot}deg)`;
-        b.style.zIndex = idx;
-        b.style.fontFamily = "'Burbank', 'Reem Kufi'"
-
-        b.style.setProperty("--card-color",
-          c.color==="red" ? "#ff4444" :
-          c.color==="yellow" ? "#ffff66" :
-          c.color==="green" ? "#66ff66" :
-          c.color==="blue" ? "#6666ff" :
+      .card:hover {
+        cursor: pointer;
+
+
+        box-shadow:
+          0 0 0 5px rgb(255, 0, 0);
+      }
+
+      #center {
+        position: relative;
+        display: flex;
+        gap: 40px;
+        justify-content: center;
+      }
+
+      #hand {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 20px auto 0 auto;
+        width: 100%;
+        min-height: 160px;
+      }
+
+      #hand button {
+        width: 100px;
+        height: 150px;
+        transition: transform 0.2s ease;
+      }
+
+      #playerBar {
+        display: flex;
+        justify-content: center;
+        gap: 75px;
+        margin: 12px 0;
+      }
+
+      .player {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        font-size: 0.8rem;
+        color: #aaa;
+      }
+
+      .player.active {
+        color: white;
+      }
+
+      .stack {
+        position: relative;
+        width: 60px;
+        height: 40px;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+      }
+
+      .stack .back {
+        width: 26px;
+        height: 38px;
+        background: #f8c0cb;
+        border: 2px solid #6c555a;
+        border-radius: 4px;
+        position: absolute;
+      }
+
+      .player.playing .stack .back {
+        background: rgb(255, 168, 197);
+        border: 2px solid rgb(154, 0, 0);
+      }
+
+      .player.playing .you {
+        color: rgb(154, 0, 0);
+      }
+
+      .you {
+        text-align: center;
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 1.2rem;
+        font-weight: bold;
+        pointer-events: none;
+        font-size: 2rem;
+        margin-top: 2px;
+        color: #6c555a;
+        z-index: 10;
+      }
+
+      .hand-row {
+        position: relative;
+        height: 160px;
+        margin: 0 auto;
+      }
+
+      .hand-row:not(:last-child) {
+        margin-bottom: -80px;
+      }
+
+      #direction {
+        text-align: center;
+        font-size: 1.2rem;
+        margin-top: 6px;
+      }
+
+      .overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+      }
+
+      .overlay.hidden {
+        display: none;
+      }
+
+      .color-card {
+        width: 300px;
+        height: 450px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
+        border-radius: 16px;
+        overflow: hidden;
+        border: 6px solid black;
+      }
+
+      .color-card div {
+        cursor: pointer;
+      }
+
+      .color-card div[data-color="red"]    { background:#ff4444; }
+      .color-card div[data-color="yellow"] { background:#ffff66; }
+      .color-card div[data-color="green"]  { background:#66ff66; }
+      .color-card div[data-color="blue"]   { background:#6666ff; }
+
+      .color-card div:hover {
+        filter: brightness(1.2);
+      }
+    </style>
+  </head>
+  <body>
+    <header class="banner large">
+      <h1>mor!tz<br><span style="font-size:1rem">&lt;html&gt;</span>uno<span style="font-size:1rem">&lt;/html&gt;</span></h1>
+    </header>
+    <div id="playerBar"></div>
+    <div id="center">
+      <div id="drawPile" class="card"></div>
+      <div id="pile" class="card"></div>
+    </div>
+    <div id="hand"></div>
+    <div id="colorOverlay" class="overlay hidden">
+      <div class="color-card">
+        <div data-color="red"></div>
+        <div data-color="yellow"></div>
+        <div data-color="green"></div>
+        <div data-color="blue"></div>
+      </div>
+    </div>
+
+    <button id="startBtn" style="display:none">Spiel starten</button>
+    <script type="module">
+      import { ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
+      import { db } from "../firebasedata.js";
+      import { getIP } from "../utils.js";
+
+
+      const GAME_PATH = "games/uno/sessions";
+      const MAX_PLAYERS = 5;
+      let prevTopCard = null;
+      let prevTurn = null;
+      let pendingPlayAnimation = null;
+      let pendingDrawAnimation = null;
+      let prevHands = null;
+      let lastState = null;
+      let pendingColorResolve = null;
+
+      const COLORS = ["red","yellow","green","blue"];
+      const VALUES = ["0","1","2","3","4","5","6","7","8","9","skip","reverse","+2"];
+      const startBtn = document.getElementById("startBtn");
+
+      function chooseColor() {
+        return new Promise(resolve => {
+          const overlay = document.getElementById("colorOverlay");
+          overlay.classList.remove("hidden");
+          pendingColorResolve = resolve;
+        });
+      }
+
+      document.querySelectorAll(".color-card div").forEach(el => {
+        el.onclick = () => {
+          const color = el.dataset.color;
+          document.getElementById("colorOverlay").classList.add("hidden");
+          pendingColorResolve?.(color);
+          pendingColorResolve = null;
+        };
+      });
+
+      function createDeck() {
+        const d = [];
+        for (const c of COLORS) {
+          for (const v of VALUES) {
+            d.push({ color:c, value:v });
+            if (v !== "0") d.push({ color:c, value:v });
+          }
+        }
+        for (let i=0;i<4;i++) {
+          d.push({ color:"white", value:"wild" });
+          d.push({ color:"white", value:"+4" });
+        }
+        return shuffle(d);
+      }
+
+      const shuffle = a => a.sort(()=>Math.random()-0.5);
+
+      const IP = await getIP();
+      const params = new URLSearchParams(location.search);
+      let session = params.get("session");
+
+      function genKey(len=5){
+        const c="abcdefghijklmnopqrstuvwxyz0123456789";
+        return Array.from({length:len},()=>c[Math.floor(Math.random()*c.length)]).join("");
+      }
+
+      if (!session) {
+        const snap = await get(ref(db, GAME_PATH));
+        let target=null;
+
+        if (snap.exists()) {
+          for (const [id,s] of Object.entries(snap.val())) {
+            if (!s.started && Object.keys(s.players||{}).length < MAX_PLAYERS) {
+              target=id; break;
+            }
+          }
+        }
+
+        if (!target) {
+          target=genKey();
+          await set(ref(db,`${GAME_PATH}/${target}`),{
+            started:false,
+            players:{}
+          });
+        }
+
+        location.href=`?session=${target}`;
+        throw "redirect";
+      }
+
+      const sessionRef = ref(db,`${GAME_PATH}/${session}`);
+      const snap = await get(sessionRef);
+      let data = snap.val();
+
+      let myIndex = Object.entries(data.players||{})
+        .find(([_,p])=>p.ip===IP)?.[0];
+
+      if (myIndex==null && Object.keys(data.players||{}).length < MAX_PLAYERS) {
+        myIndex = Object.keys(data.players||{}).length;
+        await set(ref(db,`${GAME_PATH}/${session}/players/${myIndex}`),{
+          ip:IP,
+          hand:[]
+        });
+      }
+
+      myIndex = Number(myIndex);
+
+      function animateFromPlayerStack(playerIndex, cardEl) {
+        const pile = document.getElementById("pile");
+        const playerEl = document.querySelector(
+          `.player[data-player-index="${playerIndex}"]`
+        );
+        if (!playerEl) return;
+
+        const stackEl = playerEl.querySelector(".stack");
+        if (!stackEl) return;
+
+        const clone = cardEl.cloneNode(true);
+        clone.style.position = "fixed";
+        clone.style.margin = "0";
+        clone.style.zIndex = 1000;
+
+        const start = stackEl.getBoundingClientRect();
+        const end = pile.getBoundingClientRect();
+
+        clone.style.left = start.left + start.width / 2 - 50 + "px";
+        clone.style.top = start.top + "px";
+
+        clone.style.transform = "scale(0.2) rotate(0deg)";
+
+        document.body.appendChild(clone);
+
+        const rot = (Math.random() * 10 - 5).toFixed(1);
+
+        requestAnimationFrame(() => {
+          clone.style.transition = "all 0.4s cubic-bezier(.2,.8,.2,1)";
+          clone.style.left = end.left + "px";
+          clone.style.top = end.top + "px";
+          clone.style.transform = `scale(1.1) rotate(${rot}deg)`;
+        });
+
+        setTimeout(() => clone.remove(), 400);
+      }
+
+      onValue(sessionRef, snap => {
+        const s = snap.val();
+        if (!s) return;
+
+        for (const p of Object.values(s.players)) {
+          if (!Array.isArray(p.hand)) p.hand = [];
+        }
+
+        prevHands = prevHands || {};
+        for (const [i, p] of Object.entries(s.players)) {
+          if (!Array.isArray(prevHands[i])) prevHands[i] = [];
+        }
+
+        const playerCount = Object.keys(s.players).length;
+        startBtn.style.display =
+          !s.started && myIndex === 0 && playerCount >= 2
+            ? "block"
+            : "none";
+
+        if (!s.started) return;
+
+        if (
+          prevTopCard &&
+          (s.topCard.value !== prevTopCard.value || s.topCard.color !== prevTopCard.color)
+        ) {
+          pendingPlayAnimation = {
+            player: prevTurn,
+            card: structuredClone(s.topCard)
+          };
+        }
+
+        for (const [i, p] of Object.entries(s.players)) {
+          const prev = prevHands[i]?.length ?? 0;
+          if (p.hand.length > prev) {
+            pendingDrawAnimation = {
+              player: Number(i),
+              count: p.hand.length - prev
+            };
+          }
+        }
+
+        prevHands = Object.fromEntries(
+          Object.entries(s.players).map(([i, p]) => [i, [...p.hand]])
+        );
+
+        prevTopCard = structuredClone(s.topCard);
+        prevTurn = s.turn;
+
+        render(s);
+
+        if (pendingPlayAnimation) {
+          animateFromPlayerStack(
+            pendingPlayAnimation.player,
+            createGhostCard(pendingPlayAnimation.card)
+          );
+          pendingPlayAnimation = null;
+        }
+
+        if (pendingDrawAnimation) {
+          const { player, count } = pendingDrawAnimation;
+          for (let i = 0; i < count; i++) {
+            setTimeout(() => animateDrawToPlayer(player), i * 150);
+          }
+          pendingDrawAnimation = null;
+        }
+
+        lastState = s;
+      });
+
+
+      function createGhostCard(card) {
+        const el = document.createElement("div");
+        el.className = "card";
+        applyCardContent(el, card);
+
+        el.style.setProperty("--card-color",
+          card.color==="red" ? "#ff4444" :
+          card.color==="yellow" ? "#ffff66" :
+          card.color==="green" ? "#66ff66" :
+          card.color==="blue" ? "#6666ff" :
           "#ffffff"
         );
 
-        if (canPlay(c, s.topCard) && s.turn === myIndex)
-          b.classList.add("active");
+        return el;
+      }
 
-        b.onclick = () => playCard(realIndex);
+      startBtn.onclick = async () => {
+        const snap = await get(sessionRef);
+        const s = snap.val();
 
-        rowEl.appendChild(b);
+        if (!s || s.started) return;
+        if (myIndex !== 0) return;
+
+        const deck = createDeck();
+        const players = structuredClone(s.players);
+
+        for (const p of Object.values(players)) {
+          if (!Array.isArray(p.hand)) p.hand = [];
+        }
+
+        for (let i = 0; i < 7; i++) {
+          for (const p of Object.values(players)) {
+            p.hand.push(deck.pop());
+          }
+        }
+
+        await set(sessionRef, {
+          started: true,
+          turn: 0,
+          direction: 1,
+          drawStack: 0,
+          deck,
+          topCard: deck.pop(),
+          players,
+          winner: null
+        });
+      };
+
+
+
+      function animateDrawToPlayer(playerIndex) {
+        const drawPile = document.getElementById("drawPile");
+        const playerEl = document.querySelector(
+          `.player[data-player-index="${playerIndex}"]`
+        );
+        if (!drawPile || !playerEl) return;
+
+        const stackEl = playerEl.querySelector(".stack");
+        if (!stackEl) return;
+
+        const ghost = document.createElement("div");
+        ghost.className = "card";
+        ghost.textContent = "🂠";
+        ghost.style.position = "fixed";
+        ghost.style.zIndex = 1000;
+
+        const start = drawPile.getBoundingClientRect();
+        const end = stackEl.getBoundingClientRect();
+
+        ghost.style.left = start.left + "px";
+        ghost.style.top = start.top + "px";
+
+        ghost.style.transform = "scale(0.2)";
+
+        document.body.appendChild(ghost);
+
+        requestAnimationFrame(() => {
+          ghost.style.transition = "all 0.4s cubic-bezier(.2,.8,.2,1)";
+          ghost.style.left = end.left + end.width / 2 - 50 + "px";
+          ghost.style.top = end.top + "px";
+          ghost.style.transform = "scale(0.6)";
+        });
+
+        setTimeout(() => ghost.remove(), 400);
+      }
+
+      function applyCardContent(el, card) {
+        el.innerHTML = "";
+
+        const img = document.createElement("img");
+        img.style.width = "90%";
+        img.style.height = "90%";
+        img.style.objectFit = "contain";
+        img.draggable = false;
+
+        switch (card.value) {
+          case "skip":
+            img.src = "../assets/cards/skip.png";
+            el.appendChild(img);
+            break;
+
+          case "reverse":
+            img.src = "../assets/cards/reverse.png";
+            el.appendChild(img);
+            break;
+
+          case "wild":
+            img.src = "../assets/cards/wild.png";
+            el.appendChild(img);
+            break;
+
+          default:
+            el.textContent = card.value;
+        }
+      }
+
+
+      /* ================== LOGIK ================== */
+      function canPlay(card, top) {
+        return (
+          card.color === top.color ||
+          card.value === top.value ||
+          card.color === "white"
+        );
+      }
+
+      async function playCard(i) {
+        const snap = await get(sessionRef);
+        const s = snap.val();
+        if (s.turn !== myIndex || s.winner!=null) return;
+
+        const me = s.players[myIndex];
+        const card = me.hand[i];
+        if (!canPlay(card,s.topCard)) return;
+
+        me.hand.splice(i,1);
+        s.topCard = card;
+
+        if (card.value==="+2") s.drawStack+=2;
+        if (card.value==="+4") s.drawStack+=4;
+        if (card.value==="reverse") s.direction*=-1;
+        if (card.value==="skip")
+          s.turn = (s.turn + s.direction + Object.keys(s.players).length) % Object.keys(s.players).length;
+
+        if (card.color === "white") {
+          const chosenColor = await chooseColor();
+          s.topCard.color = chosenColor;
+        }
+
+
+        if (me.hand.length===0) s.winner=myIndex;
+
+        s.turn = (s.turn + s.direction + Object.keys(s.players).length) % Object.keys(s.players).length;
+        await set(sessionRef,s);
+      }
+
+      async function drawCard() {
+        const snap = await get(sessionRef);
+        const s = snap.val();
+        if (s.turn !== myIndex) return;
+
+        const me = s.players[myIndex];
+        const n = Math.max(1,s.drawStack||1);
+
+        for (let i=0;i<n;i++) me.hand.push(s.deck.pop());
+        s.drawStack=0;
+        s.turn = (s.turn + s.direction + Object.keys(s.players).length) % Object.keys(s.players).length;
+
+        await set(sessionRef,s);
+      }
+
+      function renderPlayerBar(s) {
+        const bar = document.getElementById("playerBar");
+        bar.innerHTML = "";
+
+        const playerCount = Object.keys(s.players).length;
+
+        for (let i = 0; i < playerCount; i++) {
+          const p = document.createElement("div");
+          p.className = "player" + (s.turn === i ? " playing" : "");
+          p.dataset.playerIndex = i;
+
+          const stack = document.createElement("div");
+          stack.className = "stack";
+
+          const stackCount = Math.min(3, s.players[i].hand.length);
+          const angles = [-15, 0, 15];
+          const offsetsX = [-10, 0, 10];
+          const offsetsY = [0, -2, 0];
+
+          for (let c = 0; c < stackCount; c++) {
+            const back = document.createElement("div");
+            back.className = "back";
+
+            back.style.transform = `translateX(${offsetsX[c]}px) translateY(${offsetsY[c]}px) rotate(${angles[c]}deg)`;
+            back.style.zIndex = c;
+            stack.appendChild(back);
+          }
+
+          if (i === myIndex) {
+            const you = document.createElement("div");
+            you.className = "you";
+            you.textContent = "You";
+            stack.appendChild(you);
+          }
+
+          p.appendChild(stack);
+          bar.appendChild(p);
+        }
+
+        let dir = document.getElementById("direction");
+        if (!dir) {
+          dir = document.createElement("div");
+          dir.id = "direction";
+          bar.after(dir);
+        }
+
+        dir.textContent = s.direction === 1 ? "➡️" : "⬅️";
+      }
+
+      function render(s) {
+        renderPlayerBar(s);
+        const drawPile = document.getElementById("drawPile");
+        drawPile.innerHTML = "";
+
+        const backImg = document.createElement("img");
+        backImg.src = "../assets/cards/back.png";
+        backImg.style.width = "100%";
+        backImg.style.height = "100%";
+        backImg.style.objectFit = "contain";
+        backImg.draggable = false;
+        drawPile.style.setProperty("--card-color", "#000");
+        drawPile.style.outline = "none";
+        drawPile.appendChild(backImg);
+
+        const pile = document.getElementById("pile");
+        pile.innerHTML = "";
+        applyCardContent(pile, s.topCard);
+        pile.style.transform =
+        `rotate(${(Math.random()*10-5).toFixed(1)}deg)`;
+        pile.style.setProperty("--card-color",
+          s.topCard.color==="red" ? "#ff4444" :
+          s.topCard.color==="yellow" ? "#ffff66" :
+          s.topCard.color==="green" ? "#66ff66" :
+          s.topCard.color==="blue" ? "#6666ff" :
+            "#ffffff"
+          );
+
+        const handEl = document.getElementById("hand");
+        handEl.innerHTML = "";
+
+        const cards = s.players[myIndex].hand;
+
+        const CARD_WIDTH = 100;
+        const CARD_GAP = 18;
+        const MAX_PER_ROW = 8;
+
+        const containerWidth = handEl.clientWidth;
+        const fitPerRow = Math.floor(
+          (containerWidth + CARD_GAP) / (CARD_WIDTH + CARD_GAP)
+        );
+
+        const cardsPerRow = Math.min(MAX_PER_ROW, Math.max(1, fitPerRow));
+
+        let row = [];
+
+        for (let i = 0; i < cards.length; i++) {
+          row.push(cards[i]);
+
+          if (row.length === cardsPerRow || i === cards.length - 1) {
+            const rowEl = document.createElement("div");
+            rowEl.className = "hand-row";
+            rowEl.style.width =
+              `${row.length * (CARD_WIDTH + CARD_GAP) - CARD_GAP}px`;
+
+            row.forEach((c, idx) => {
+              const b = document.createElement("button");
+              b.className = "card";
+              applyCardContent(b, c);
+
+              const realIndex = i - row.length + idx + 1;
+              const rot = (Math.random() * 6 - 3).toFixed(1);
+
+              b.style.position = "absolute";
+              b.style.left = `${idx * (CARD_WIDTH + CARD_GAP)}px`;
+              b.style.transform = `rotate(${rot}deg)`;
+              b.style.zIndex = idx;
+              b.style.fontFamily = "'Burbank', 'Reem Kufi'"
+
+              b.style.setProperty("--card-color",
+                c.color==="red" ? "#ff4444" :
+                c.color==="yellow" ? "#ffff66" :
+                c.color==="green" ? "#66ff66" :
+                c.color==="blue" ? "#6666ff" :
+                "#ffffff"
+              );
+
+              if (canPlay(c, s.topCard) && s.turn === myIndex)
+                b.classList.add("active");
+
+              b.onclick = () => playCard(realIndex);
+
+              rowEl.appendChild(b);
+            });
+
+            handEl.appendChild(rowEl);
+            row = [];
+          }
+        }
+      }
+
+      document.getElementById("drawPile").onclick = drawCard;
+
+      window.addEventListener("resize", () => {
+        if (!lastState) return;
+        render(lastState);
       });
 
-      handEl.appendChild(rowEl);
-      row = [];
-    }
-  }
-
-
-}
-
-document.getElementById("drawPile").onclick = drawCard;
-
-window.addEventListener("resize", () => {
-  if (!lastState) return;
-  render(lastState);
-});
-
-</script>
-</body>
+    </script>
+  </body>
 </html>

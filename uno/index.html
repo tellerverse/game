@@ -25,10 +25,10 @@ button { font-size:1.4rem;margin:4px;padding:6px }
   transition: transform 0.4s ease, left 0.4s ease, top 0.4s ease;
 }
 .card:hover {
-  transform: scale(1.1);
   cursor: pointer;
   border: none;
   box-shadow: 0 0 10px #fff;
+  z-index: 999;
 }
 /* #game {
   position: absolute;
@@ -49,24 +49,26 @@ button { font-size:1.4rem;margin:4px;padding:6px }
 
 #hand {
   position: relative;
+  display: flex;
+  flex-direction: column;   /* 🔥 Reihen untereinander */
+  align-items: center;
   margin: 20px auto 0 auto;
   width: 100%;
-  max-width: 1000px;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 12px;
+  /* max-width: 1000px; */
+  /* flex-wrap: wrap; */
+  /* justify-content: center; */
+  /* gap: 12px; */
   min-height: 160px;
   /* background: #000; */
-}
+  }
 
-#hand button {
-  width: 100px;   /* feste Breite */
-  height: 150px;  /* feste Höhe */
-  transition: transform 0.2s ease;
-}
-/* 
-.card {
+  #hand button {
+    width: 100px;   /* feste Breite */
+    height: 150px;  /* feste Höhe */
+    transition: transform 0.2s ease;
+  }
+  /* 
+  .card {
   width: 15vw;
   height: calc(15vw * 1.4);
   border-radius: 8px;
@@ -76,62 +78,81 @@ button { font-size:1.4rem;margin:4px;padding:6px }
   align-items: center;
   justify-content: center;
   transition: transform 0.4s ease, left 0.4s ease, top 0.4s ease;
-} */
- /* ================= PLAYER BAR ================= */
- #playerBar {
-   display: flex;
-   justify-content: center;
-   gap: 24px;
-   margin: 12px 0;
-   /* background: #000; */
- }
+  } */
+  /* ================= PLAYER BAR ================= */
+  #playerBar {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin: 12px 0;
+    /* background: #000; */
+  }
 
- .player {
-   display: flex;
-   flex-direction: column;
-   align-items: center;
-   font-size: 0.8rem;
-   color: #aaa;
- }
+  .player {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 0.8rem;
+    color: #aaa;
+  }
 
- .player.active {
-   color: white;
- }
+  .player.active {
+    color: white;
+  }
 
- .stack {
-   display: flex;
- }
+  .stack {
+    display: flex;
+    position: relative; 
+  }
 
- .stack .back {
-   width: 26px;
-   height: 38px;
-   background: #f8c0cb;
-   border: 2px solid #000;
-   border-radius: 4px;
-   margin-left: -10px;
- }
+  .stack .back {
+    width: 26px;
+    height: 38px;
+    background: #f8c0cb;
+    border: 2px solid #6c555a;
+    border-radius: 4px;
+    margin-left: -10px;
+  }
 
- .player.playing .stack .back {
-   background: #fcd;
-   border: 2px solid rgb(255, 0, 0);
- }
+  .player.playing .stack .back {
+    background: rgb(255, 168, 197);
+    border: 2px solid #a11c1c;
+  }
 
- .player.playing .you {
-   color: rgb(255, 0, 0);
- }
+  .player.playing .you {
+    color: rgb(255, 0, 0);
+  }
 
- .you {
-   font-size: 1.5rem;
-   margin-top: 2px;
-   color: rgb(0, 0, 0);
- }
+  .you {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.2rem;
+    font-weight: bold;
+    pointer-events: none;
+    font-size: 1.5rem;
+    margin-top: 2px;
+    color: rgb(0, 0, 0);
+  }
 
- /* ================= DIRECTION ================= */
- #direction {
-   text-align: center;
-   font-size: 1.2rem;
-   margin-top: 6px;
- }
+.hand-row {
+  position: relative;          /* 🔥 absolut-positionierte Karten brauchen das */
+  height: 160px;               /* Kartenhöhe */
+  width: calc(8 * 65px + 35px);/* exakt 8 Karten */
+  margin: 0 auto;
+}
+
+.hand-row:not(:last-child) {
+  margin-bottom: -80px;        /* 🔥 Überlappt nach unten */
+}
+
+  /* ================= DIRECTION ================= */
+  #direction {
+    text-align: center;
+    font-size: 1.2rem;
+    margin-top: 6px;
+  }
 </style>
 </head>
 <body>
@@ -240,7 +261,6 @@ myIndex = Number(myIndex);
 
 function animateFromPlayerStack(playerIndex, cardEl) {
   const pile = document.getElementById("pile");
-
   const playerEl = document.querySelector(
     `.player[data-player-index="${playerIndex}"]`
   );
@@ -260,19 +280,23 @@ function animateFromPlayerStack(playerIndex, cardEl) {
   clone.style.left = start.left + start.width / 2 - 50 + "px";
   clone.style.top = start.top + "px";
 
+  // 🔥 START: mini
+  clone.style.transform = "scale(0.2) rotate(0deg)";
+
   document.body.appendChild(clone);
 
   const rot = (Math.random() * 10 - 5).toFixed(1);
 
   requestAnimationFrame(() => {
-    clone.style.transition = "all 0.4s ease";
+    clone.style.transition = "all 0.4s cubic-bezier(.2,.8,.2,1)";
     clone.style.left = end.left + "px";
     clone.style.top = end.top + "px";
-    clone.style.transform = `rotate(${rot}deg) scale(1.1)`;
+    clone.style.transform = `scale(1.1) rotate(${rot}deg)`;
   });
 
   setTimeout(() => clone.remove(), 400);
 }
+
 
 onValue(sessionRef, snap => {
   const s = snap.val();
@@ -407,17 +431,21 @@ function animateDrawToPlayer(playerIndex) {
   ghost.style.left = start.left + "px";
   ghost.style.top = start.top + "px";
 
+  // 🔥 START: sehr klein
+  ghost.style.transform = "scale(0.2)";
+
   document.body.appendChild(ghost);
 
   requestAnimationFrame(() => {
-    ghost.style.transition = "all 0.4s ease";
-    ghost.style.left = end.left + "px";
+    ghost.style.transition = "all 0.4s cubic-bezier(.2,.8,.2,1)";
+    ghost.style.left = end.left + end.width / 2 - 50 + "px";
     ghost.style.top = end.top + "px";
     ghost.style.transform = "scale(0.6)";
   });
 
   setTimeout(() => ghost.remove(), 400);
 }
+
 
 
 /* ================== LOGIK ================== */
@@ -480,28 +508,31 @@ function renderPlayerBar(s) {
   for (let i = 0; i < playerCount; i++) {
     const p = document.createElement("div");
     p.className = "player" + (s.turn === i ? " playing" : "");
-    p.dataset.playerIndex = i; // 🔥 WICHTIG
+    p.dataset.playerIndex = i;
 
     const stack = document.createElement("div");
     stack.className = "stack";
 
+    // Kartenrücken
     for (let c = 0; c < 3; c++) {
       const back = document.createElement("div");
       back.className = "back";
       stack.appendChild(back);
     }
 
-    p.appendChild(stack);
-
+    // 🔥 "You" INSIDE stack (nur für dich)
     if (i === myIndex) {
       const you = document.createElement("div");
       you.className = "you";
       you.textContent = "You";
-      p.appendChild(you);
+      stack.appendChild(you);
     }
 
+    // 🔥 Stack IMMER anhängen
+    p.appendChild(stack);
     bar.appendChild(p);
   }
+
 
   // Richtungspfeil
   let dir = document.getElementById("direction");
@@ -545,9 +576,10 @@ function render(s) {
 
     if (row.length === maxPerRow || i === cards.length - 1) {
       const rowEl = document.createElement("div");
+
       rowEl.className = "hand-row";
-      rowEl.style.display = "flex";
-      rowEl.style.gap = "12px";
+      // rowEl.style.display = "flex";
+      // rowEl.style.gap = "12px";
 
       row.forEach((c, idx) => {
         const b = document.createElement("button");
@@ -556,7 +588,12 @@ function render(s) {
 
         b.dataset.index = i - row.length + idx + 1;
 
-        b.style.transform = `rotate(${(Math.random() * 10 - 5).toFixed(1)}deg)`;
+        const overlap = 65; // 🔥 wie stark sie ineinander liegen
+        const rot = (Math.random() * 6 - 3).toFixed(1);
+
+        b.style.position = "absolute";
+        b.style.left = `${idx * overlap}px`;
+        b.style.transform = `rotate(${rot}deg)`;
         b.style.zIndex = idx;
         b.style.fontFamily = "'Burbank', 'Reem Kufi'";
 
@@ -570,15 +607,17 @@ function render(s) {
 
         if (canPlay(c, s.topCard) && s.turn === myIndex) b.classList.add("active");
 
+        const realIndex = i - row.length + idx + 1;
+
         b.onclick = async () => {
-          await playCard(idx);
+          await playCard(realIndex);
         };
 
         rowEl.appendChild(b);
       });
 
       // Reihen stapeln, letzte Reihe oben
-      handEl.prepend(rowEl);
+      handEl.appendChild(rowEl);
       row = [];
     }
   }

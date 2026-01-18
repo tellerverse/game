@@ -87,7 +87,7 @@ button { font-size:1.4rem;margin:4px;padding:6px }
   #playerBar {
     display: flex;
     justify-content: center;
-    gap: 24px;
+    gap: 75px;
     margin: 12px 0;
     /* background: #000; */
   }
@@ -105,9 +105,22 @@ button { font-size:1.4rem;margin:4px;padding:6px }
   }
 
   .stack {
+    position: relative;
+    width: 60px; /* passend für 3 Karten */
+    height: 40px;
     display: flex;
-    position: relative; 
+    justify-content: center; /* mittlere Karte zentriert */
+    align-items: flex-start;
   }
+
+  /* .stack .back {
+    width: 26px;
+    height: 38px;
+    background: #f8c0cb;
+    border: 2px solid #6c555a;
+    border-radius: 4px;
+    margin-left: -10px;
+  } */
 
   .stack .back {
     width: 26px;
@@ -115,19 +128,24 @@ button { font-size:1.4rem;margin:4px;padding:6px }
     background: #f8c0cb;
     border: 2px solid #6c555a;
     border-radius: 4px;
-    margin-left: -10px;
+    position: absolute;
+    /* left: 50%; */
+    /* top: 0; */
+    /* transform-origin: bottom center; */
+    /* margin-left: -13px; */
   }
 
   .player.playing .stack .back {
     background: rgb(255, 168, 197);
-    border: 2px solid #a11c1c;
+    border: 2px solid rgb(154, 0, 0);
   }
 
   .player.playing .you {
-    color: rgb(255, 0, 0);
+    color: rgb(154, 0, 0);
   }
 
   .you {
+    text-align: center;
     position: absolute;
     left: 50%;
     top: 50%;
@@ -135,9 +153,10 @@ button { font-size:1.4rem;margin:4px;padding:6px }
     font-size: 1.2rem;
     font-weight: bold;
     pointer-events: none;
-    font-size: 1.5rem;
+    font-size: 2rem;
     margin-top: 2px;
-    color: rgb(0, 0, 0);
+    color: #6c555a;
+    z-index: 10;
   }
 
 .hand-row {
@@ -364,21 +383,33 @@ function animateFromPlayerStack(playerIndex, cardEl) {
   setTimeout(() => clone.remove(), 400);
 }
 
-
 onValue(sessionRef, snap => {
   const s = snap.val();
   if (!s) return;
-  
-  const playerCount = Object.keys(s.players || {}).length;
+
+  // Sicherstellen, dass jeder Spieler eine Hand hat
+  for (const p of Object.values(s.players)) {
+    if (!Array.isArray(p.hand)) p.hand = [];
+  }
+
+  // prevHands initialisieren, falls noch undefined
+  prevHands = prevHands || {};
+  for (const [i, p] of Object.entries(s.players)) {
+    if (!Array.isArray(prevHands[i])) prevHands[i] = [];
+  }
+
+  const playerCount = Object.keys(s.players).length;
   startBtn.style.display =
     !s.started && myIndex === 0 && playerCount >= 2
       ? "block"
       : "none";
-  if (!s || !s.started) return;
+
+  if (!s.started) return;
+
+  // Karte gespielt Animation
   if (
     prevTopCard &&
-    (s.topCard.value !== prevTopCard.value ||
-      s.topCard.color !== prevTopCard.color)
+    (s.topCard.value !== prevTopCard.value || s.topCard.color !== prevTopCard.color)
   ) {
     pendingPlayAnimation = {
       player: prevTurn,
@@ -386,9 +417,9 @@ onValue(sessionRef, snap => {
     };
   }
 
-  // Karte gezogen
-  for (const [i,p] of Object.entries(s.players)) {
-    const prev = prevHands?.[i]?.length ?? 0;
+  // Karte gezogen Animation
+  for (const [i, p] of Object.entries(s.players)) {
+    const prev = prevHands[i]?.length ?? 0;
     if (p.hand.length > prev) {
       pendingDrawAnimation = {
         player: Number(i),
@@ -398,7 +429,7 @@ onValue(sessionRef, snap => {
   }
 
   prevHands = Object.fromEntries(
-    Object.entries(s.players).map(([i,p]) => [i, [...p.hand]])
+    Object.entries(s.players).map(([i, p]) => [i, [...p.hand]])
   );
 
   prevTopCard = structuredClone(s.topCard);
@@ -406,7 +437,7 @@ onValue(sessionRef, snap => {
 
   render(s);
 
-  // 🔥 JETZT existiert der DOM
+  // Animationen
   if (pendingPlayAnimation) {
     animateFromPlayerStack(
       pendingPlayAnimation.player,
@@ -418,14 +449,14 @@ onValue(sessionRef, snap => {
   if (pendingDrawAnimation) {
     const { player, count } = pendingDrawAnimation;
     for (let i = 0; i < count; i++) {
-      setTimeout(() => {
-        animateDrawToPlayer(player);
-      }, i * 150); // jede Karte 150ms verzögert
+      setTimeout(() => animateDrawToPlayer(player), i * 150);
     }
     pendingDrawAnimation = null;
   }
+
   lastState = s;
 });
+
 
 function createGhostCard(card) {
   const el = document.createElement("div");
@@ -620,9 +651,17 @@ function renderPlayerBar(s) {
     stack.className = "stack";
 
     // Kartenrücken
-    for (let c = 0; c < 3; c++) {
+    const stackCount = Math.min(3, s.players[i].hand.length); // maximal 3 anzeigen
+    const angles = [-15, 0, 15]; // links schräg, mittig gerade, rechts schräg
+    const offsetsX = [-10, 0, 10];
+    const offsetsY = [0, -2, 0];
+
+    for (let c = 0; c < stackCount; c++) {
       const back = document.createElement("div");
       back.className = "back";
+
+      back.style.transform = `translateX(${offsetsX[c]}px) translateY(${offsetsY[c]}px) rotate(${angles[c]}deg)`;
+      back.style.zIndex = c; // mittlere Karte oben
       stack.appendChild(back);
     }
 
@@ -630,7 +669,7 @@ function renderPlayerBar(s) {
     if (i === myIndex) {
       const you = document.createElement("div");
       you.className = "you";
-      you.textContent = "you";
+      you.textContent = "You";
       stack.appendChild(you);
     }
 

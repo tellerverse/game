@@ -423,6 +423,8 @@
           loadingText.textContent = `warte auf spieler (${playerCount}/2)`;
         } else {
           loadingText.style.display = "none";
+          document.getElementById("lobby").style.display = "none";
+          document.getElementById("center").style.display = "flex";
         }
 
         for (const p of Object.values(s.players)) {
@@ -539,11 +541,7 @@
           players,
           placements: []
         });
-        document.getElementById("lobby").style.display = "none";
-        document.getElementById("center").style.display = "flex";
       };
-
-
 
       function animateDrawToPlayer(playerIndex) {
         const drawPile = document.getElementById("drawPile");

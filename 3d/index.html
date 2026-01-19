@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Third Person Demo</title>
+<style>
+    html, body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: #000;
+    }
+    #info {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        color: white;
+        font-family: monospace;
+        z-index: 10;
+    }
+</style>
+</head>
+<body>
+<div id="info">Click to lock mouse<br>WASD = Move | Space = Jump</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+
+<script>
+/* =========================
+   BASIC SETUPscene.add(ground);
+
+========================= */
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x202020);
+
+const camera = new THREE.PerspectiveCamera(
+    75,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    1000
+);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+/* =========================
+   LIGHT
+========================= */
+scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+dirLight.position.set(5, 10, 5);
+scene.add(dirLight);
+
+/* =========================
+   GROUND
+========================= */
+const grid = new THREE.GridHelper(200, 200, 0x00ffff, 0x444444);
+scene.add(grid);
+
+/* =========================
+   PLAYER
+========================= */
+const player = new THREE.Mesh(
+    new THREE.CapsuleGeometry(0.5, 1.0, 4, 8),
+    new THREE.MeshStandardMaterial({ color: 0x00ffcc })
+);
+player.position.y = 1;
+scene.add(player);
+
+/* =========================
+   CONTROLS
+========================= */
+let keys = {};
+document.addEventListener("keydown", e => {
+    keys[e.code] = true;
+
+    if (e.code === "Space" && isGrounded) {
+        velocityY = JUMP_FORCE;
+        isGrounded = false;
+    }
+});
+
+document.addEventListener("keyup", e => keys[e.code] = false);
+let velocityY = 0;
+let isGrounded = true;
+
+const GRAVITY = -0.00515;
+const JUMP_FORCE = 0.32;
+const GROUND_Y = 1; // gleiche Höhe wie player.position.y
+// Mouse look
+let yaw = 0;
+let pitch = 0;
+
+document.body.addEventListener("click", () => {
+    document.body.requestPointerLock();
+});
+
+document.addEventListener("mousemove", e => {
+    if (document.pointerLockElement !== document.body) return;
+
+    yaw -= e.movementX * 0.002;
+    pitch -= e.movementY * 0.002;
+    pitch = Math.max(-1.2, Math.min(1.2, pitch));
+});
+
+/* =========================
+   CAMERA OFFSET
+========================= */
+const cameraOffset = new THREE.Vector3(0, 2, 5);
+
+/* =========================
+   LOOP
+========================= */
+function animate() {
+    requestAnimationFrame(animate);
+
+    // Player rotation
+    player.rotation.y = yaw;
+
+    // Movement
+    const speed = 0.08;
+    const forward = new THREE.Vector3(
+        Math.sin(yaw),
+        0,
+        Math.cos(yaw)
+    );
+    const right = new THREE.Vector3(
+        Math.cos(yaw),
+        0,
+        -Math.sin(yaw)
+    );
+
+    if (keys["KeyS"]) player.position.add(forward.clone().multiplyScalar(speed));
+    if (keys["KeyW"]) player.position.add(forward.clone().multiplyScalar(-speed));
+    if (keys["KeyA"]) player.position.add(right.clone().multiplyScalar(-speed));
+    if (keys["KeyD"]) player.position.add(right.clone().multiplyScalar(speed));
+
+    // Camera follow
+    const offset = cameraOffset.clone();
+    offset.applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
+    camera.position.copy(player.position).add(offset);
+    camera.lookAt(player.position.x, player.position.y + 1.2, player.position.z);
+
+    // Gravity
+    velocityY += GRAVITY;
+    player.position.y += velocityY;
+
+    // Boden-Kollision (simpel, stabil)
+    if (player.position.y <= GROUND_Y) {
+        player.position.y = GROUND_Y;
+        velocityY = 0;
+        isGrounded = true;
+    }
+
+    renderer.render(scene, camera);
+}
+
+animate();
+
+/* =========================
+   RESIZE
+========================= */
+window.addEventListener("resize", () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>

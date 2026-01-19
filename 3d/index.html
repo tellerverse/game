@@ -27,8 +27,7 @@
 
 <script>
 /* =========================
-   BASIC SETUPscene.add(ground);
-
+   BASIC SETUP
 ========================= */
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x202020);
@@ -74,14 +73,25 @@ scene.add(player);
 let keys = {};
 document.addEventListener("keydown", e => {
     keys[e.code] = true;
-
+    if (e.code === "Digit1") { buildMode = "wall"; updateGhost(); }
+    if (e.code === "Digit2") { buildMode = "floor"; updateGhost(); }
+    if (e.code === "Digit3") { buildMode = "stair"; updateGhost(); }
+    if (e.code === "Digit4") { buildMode = "cone"; updateGhost(); }
     if (e.code === "Space" && isGrounded) {
         velocityY = JUMP_FORCE;
         isGrounded = false;
     }
 });
 
+function updateGhost() {
+    if (ghost) scene.remove(ghost);
+    ghost = createBuild(buildMode, true);
+    scene.add(ghost);
+}
+
+
 document.addEventListener("keyup", e => keys[e.code] = false);
+
 let velocityY = 0;
 let isGrounded = true;
 
@@ -104,14 +114,139 @@ document.addEventListener("mousemove", e => {
     pitch = Math.max(-1.2, Math.min(1.2, pitch));
 });
 
+// build
+const BUILD_SIZE = 2;
+let buildMode = "wall"; // wall | floor | stair | cone
+const builds = [];
+let ghost = null;
+
+function createBuild(type, ghostMode = false) {
+    let geo;
+    const mat = new THREE.MeshStandardMaterial({
+        color: ghostMode ? 0x00ff00 : 0x888888,
+        transparent: ghostMode,
+        opacity: ghostMode ? 0.5 : 1
+    });
+
+    switch (type) {
+        case "wall":
+            geo = new THREE.BoxGeometry(BUILD_SIZE, BUILD_SIZE, 0.2);
+            break;
+        case "floor":
+            geo = new THREE.BoxGeometry(BUILD_SIZE, 0.2, BUILD_SIZE);
+            break;
+        case "stair":
+            geo = new THREE.BoxGeometry(BUILD_SIZE, BUILD_SIZE, BUILD_SIZE);
+            break;
+        case "cone":
+            geo = new THREE.ConeGeometry(BUILD_SIZE, BUILD_SIZE, 4);
+            break;
+    }
+
+    return new THREE.Mesh(geo, mat);
+}
+
+ghost = createBuild(buildMode, true);
+scene.add(ghost);
+
+function getBuildPosition() {
+    const dir = new THREE.Vector3(
+        Math.sin(yaw),
+        0,
+        Math.cos(yaw)
+    );
+
+    const pos = player.position.clone().add(dir.multiplyScalar(4));
+
+    pos.x = Math.round(pos.x / BUILD_SIZE) * BUILD_SIZE;
+    pos.y = Math.round(pos.y / BUILD_SIZE) * BUILD_SIZE;
+    pos.z = Math.round(pos.z / BUILD_SIZE) * BUILD_SIZE;
+
+    return pos;
+}
+
+function canPlace(buildMesh) {
+    const box = new THREE.Box3().setFromObject(buildMesh);
+
+    for (const b of builds) {
+        const otherBox = new THREE.Box3().setFromObject(b);
+        if (box.intersectsBox(otherBox)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+
+document.addEventListener("mousedown", e => {
+    if (e.button !== 0 || !ghost) return;
+
+    if (!canPlace(ghost)) return;
+
+    const build = createBuild(buildMode);
+    build.position.copy(ghost.position);
+    build.rotation.copy(ghost.rotation);
+
+    builds.push(build);
+    scene.add(build);
+});
+
+// colision
+
+const downRay = new THREE.Raycaster();
+const DOWN = new THREE.Vector3(0, -1, 0);
+const PLAYER_HEIGHT = 1; // halbe Höhe vom Capsule
+
+function checkBuildGroundCollision() {
+    downRay.set(
+        new THREE.Vector3(
+            player.position.x,
+            player.position.y,
+            player.position.z
+        ),
+        DOWN
+    );
+
+    const hits = downRay.intersectObjects(builds, false);
+
+    if (hits.length > 0) {
+        const hit = hits[0];
+
+        // nur wenn wir von oben kommen
+        if (velocityY <= 0) {
+            player.position.y = hit.point.y + PLAYER_HEIGHT;
+            velocityY = 0;
+            isGrounded = true;
+            return true;
+        }
+    }
+    return false;
+}
+
 /* =========================
    CAMERA OFFSET
 ========================= */
-const cameraOffset = new THREE.Vector3(0, 2, 5);
+const cameraOffset = new THREE.Vector3(0, 2, -5);
 
 /* =========================
    LOOP
 ========================= */
+function canMove(newPos) {
+    const playerBox = new THREE.Box3().setFromCenterAndSize(
+        newPos.clone().add(new THREE.Vector3(0, PLAYER_HEIGHT/2, 0)), // Center
+        new THREE.Vector3(1, PLAYER_HEIGHT, 1) // Capsule approx
+    );
+
+    for (const b of builds) {
+        const bBox = new THREE.Box3().setFromObject(b);
+        if (playerBox.intersectsBox(bBox)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+
 function animate() {
     requestAnimationFrame(animate);
 
@@ -131,10 +266,21 @@ function animate() {
         -Math.sin(yaw)
     );
 
-    if (keys["KeyS"]) player.position.add(forward.clone().multiplyScalar(speed));
-    if (keys["KeyW"]) player.position.add(forward.clone().multiplyScalar(-speed));
-    if (keys["KeyA"]) player.position.add(right.clone().multiplyScalar(-speed));
-    if (keys["KeyD"]) player.position.add(right.clone().multiplyScalar(speed));
+    const moveSpeed = 0.08;
+
+    // Forward / Back
+    let forwardMove = new THREE.Vector3();
+    if (keys["KeyW"]) forwardMove.add(forward.clone().multiplyScalar(moveSpeed));
+    if (keys["KeyS"]) forwardMove.add(forward.clone().multiplyScalar(-moveSpeed));
+    let targetPos = player.position.clone().add(forwardMove);
+    if (canMove(targetPos)) player.position.copy(targetPos);
+
+    // Right / Left
+    let sideMove = new THREE.Vector3();
+    if (keys["KeyD"]) sideMove.add(right.clone().multiplyScalar(moveSpeed));
+    if (keys["KeyA"]) sideMove.add(right.clone().multiplyScalar(-moveSpeed));
+    targetPos = player.position.clone().add(sideMove);
+    if (canMove(targetPos)) player.position.copy(targetPos);
 
     // Camera follow
     const offset = cameraOffset.clone();
@@ -145,12 +291,45 @@ function animate() {
     // Gravity
     velocityY += GRAVITY;
     player.position.y += velocityY;
+    isGrounded = false;
 
-    // Boden-Kollision (simpel, stabil)
-    if (player.position.y <= GROUND_Y) {
-        player.position.y = GROUND_Y;
+    // Raycast nach unten für Boden und Build-Landing
+    downRay.set(
+        new THREE.Vector3(player.position.x, player.position.y, player.position.z),
+        DOWN
+    );
+    const hits = downRay.intersectObjects(builds, false);
+    let hitY = GROUND_Y;
+
+    if (hits.length > 0) hitY = Math.max(hitY, hits[0].point.y + PLAYER_HEIGHT);
+
+    if (player.position.y <= hitY) {
+        player.position.y = hitY;
         velocityY = 0;
         isGrounded = true;
+    }
+
+
+    // Check Build-Collision zuerst
+    if (!checkBuildGroundCollision()) {
+        // Fallback: Weltboden
+        if (player.position.y <= GROUND_Y) {
+            player.position.y = GROUND_Y;
+            velocityY = 0;
+            isGrounded = true;
+        }
+    }
+
+
+    // Ghost Preview Update
+    if (ghost) {
+        const pos = getBuildPosition();
+        ghost.position.copy(pos);
+
+        ghost.rotation.y = (buildMode === "wall" || buildMode === "stair") ? yaw : 0;
+
+        const valid = canPlace(ghost);
+        ghost.material.color.set(valid ? 0x00ff00 : 0xff0000);
     }
 
     renderer.render(scene, camera);

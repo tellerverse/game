@@ -526,13 +526,26 @@
         }
       }
 
-      function canPlay(card, top) {
+      function canPlay(card, top, drawStack) {
+        // Strafphase aktiv
+        if (drawStack > 0) {
+          if (top.value === "+4") {
+            return card.value === "+4";
+          }
+          if (top.value === "+2") {
+            return card.value === "+2" || card.value === "+4";
+          }
+          return false;
+        }
+
+        // normale UNO-Regeln
         return (
           card.color === top.color ||
           card.value === top.value ||
           card.color === "white"
         );
       }
+
 
       async function playCard(i) {
         const snap = await get(sessionRef);
@@ -541,7 +554,7 @@
 
         const me = s.players[myIndex];
         const card = me.hand[i];
-        if (!canPlay(card,s.topCard)) return;
+        if (!canPlay(card, s.topCard, s.drawStack)) return;
 
         me.hand.splice(i,1);
         s.topCard = card;
@@ -704,8 +717,9 @@
                 "#ffffff"
               );
 
-              if (canPlay(c, s.topCard) && s.turn === myIndex)
+              if (canPlay(c, s.topCard, s.drawStack) && s.turn === myIndex)
                 b.classList.add("active");
+
 
               b.onclick = () => playCard(realIndex);
 

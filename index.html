@@ -107,6 +107,14 @@
                 border-radius: 10px;
                 font-family: 'Burbank';
                 cursor: pointer;
+                transition: background .5s ease, color .5s ease, border-color .5s ease;
+            }
+
+            .clicked {
+                background: #ff7d7d51 !important;
+                color: rgb(255, 0, 0) !important;
+                border-color: #ff0000 !important;
+                /* transition: background 1s ease, color 1s ease, border-color 1s ease; */
             }
 
             @media (max-width: 600px) {
@@ -239,6 +247,8 @@
                         const gameId = gameEl.dataset.game;
                         set(ref(db, `games/${gameId}/sessions`), null);
                     };
+                    el.classList.add("clicked");
+                    setTimeout(() => {el.classList.remove("clicked")}, 300);
                 };
             });
         </script>

@@ -329,6 +329,14 @@
       const snap = await get(sessionRef);
       let data = snap.val();
 
+      if (!data) {
+        await set(sessionRef, {
+          started: false,
+          players: {}
+        });
+        data = { started: false, players: {} };
+      }
+
       let myIndex = Object.entries(data.players||{})
         .find(([_,p])=>p.ip===IP)?.[0];
 
@@ -342,7 +350,7 @@
 
       myIndex = Number(myIndex);
 
-      function showPlacements(s) {
+      async function showPlacements(s) {
         const overlay = document.getElementById("resultOverlay");
         const text = document.getElementById("resultText");
 
@@ -362,6 +370,14 @@
         `;
 
         overlay.classList.remove("hidden");
+
+        // Button klick -> Seite neu laden
+        document.querySelector(".rematchBtn").onclick = () => location.reload();
+
+        // Session automatisch löschen, wenn alle Spieler platziert sind
+        if (s.placements.length === total) {
+          await set(sessionRef, null);
+        }
       }
 
       function animateFromPlayerStack(playerIndex, cardEl) {
@@ -833,6 +849,9 @@
   <div id="resultOverlay" class="overlay hidden">
     <div style="background:#ffffff4d;padding:30px;border:8px solid #ffffff4d;border-radius:16px;color:white;text-align:center">
       <div id="resultText"></div>
+      <button class="rematchBtn" style="font-family: 'Burbank', 'Reem Kufi';font-size: 2rem;margin-top:20px;padding:8px;border:3px solid #ffffff55;border-radius:10px;transition: transform .2s ease, box-shadow .2s ease;background: #ffffff55;color: white;">
+        revenge
+      </button>
     </div>
   </div>
 </html>

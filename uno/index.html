@@ -6,10 +6,30 @@
     <title>uno</title>
     <link rel="stylesheet" href="../style.css">
     <style>
-      button {
-        font-size:1.4rem;
-        margin:4px;
-        padding:6px;
+      #lobby {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .loading {
+        padding-bottom: 10px;
+      }
+
+      #startBtn {
+        font-family: 'Burbank', 'Reem Kufi';
+        display: none;
+        font-size: 2rem;
+        margin: 0px;
+        padding: 8px;
+        border: 3px solid #ffffff55;
+        border-radius: 10px;
+        transition: transform .2s ease, box-shadow .2s ease;
+        background: #ffffff55;
+
+        color: white;
+
       }
 
       .active { 
@@ -43,7 +63,7 @@
 
       #center {
         position: relative;
-        display: flex;
+        display: none;
         gap: 40px;
         justify-content: center;
       }
@@ -184,6 +204,10 @@
     <header class="banner large">
       <a href="../" style="text-decoration: none;"><h1>mor!tz<br><span style="font-size:1rem">&lt;html&gt;</span>uno<span style="font-size:1rem">&lt;/html&gt;</span></h1></a>
     </header>
+    <div id="lobby">
+      <div class="loading">warte auf spieler</div>
+      <button id="startBtn">spiel starten</button>
+    </div>
     <div id="playerBar"></div>
     <div id="center">
       <div id="drawPile" class="card"></div>
@@ -199,7 +223,6 @@
       </div>
     </div>
 
-    <button id="startBtn" style="display:none">Spiel starten</button>
     <script type="module">
       import { ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-database.js";
       import { db } from "../firebasedata.js";
@@ -226,6 +249,22 @@
           pendingColorResolve = resolve;
         });
       }
+
+      function nextAliveTurn(s) {
+        s.placements ??= [];
+        const ids = Object.keys(s.players).map(Number);
+        let t = s.turn;
+
+        do {
+          t = (t + s.direction + ids.length) % ids.length;
+        } while (
+          s.placements.includes(t) ||
+          s.players[t].hand.length === 0
+        );
+
+        return t;
+      }
+
 
       document.querySelectorAll(".color-card div").forEach(el => {
         el.onclick = () => {
@@ -303,6 +342,28 @@
 
       myIndex = Number(myIndex);
 
+      function showPlacements(s) {
+        const overlay = document.getElementById("resultOverlay");
+        const text = document.getElementById("resultText");
+
+        const place = s.placements.indexOf(myIndex) + 1;
+        const total = Object.keys(s.players).length;
+
+        const colors = ["#ffff00", "#c0c0c0", "#cd7f32"]; // Gold, Silber, Bronze
+        const color = place >= 1 && place <= 3 ? colors[place - 1] : "white";
+
+        text.innerHTML = `
+          <div style="font-size:3rem;margin-bottom:10px">
+            Plazierung<br>
+          </div>
+          <div style="font-size:6rem;margin-bottom:10px; color: ${color}">
+            #${place}
+          </div>
+        `;
+
+        overlay.classList.remove("hidden");
+      }
+
       function animateFromPlayerStack(playerIndex, cardEl) {
         const pile = document.getElementById("pile");
         const playerEl = document.querySelector(
@@ -340,9 +401,29 @@
         setTimeout(() => clone.remove(), 400);
       }
 
-      onValue(sessionRef, snap => {
+      onValue(sessionRef, async snap => {
         const s = snap.val();
         if (!s) return;
+
+        s.placements ??= [];
+
+        const alive = Object.keys(s.players)
+          .map(Number)
+          .filter(i => !s.placements.includes(i));
+
+        if (alive.length === 1 && !s.placements.includes(alive[0])) {
+          s.placements.push(alive[0]); // letzter Platz
+          await set(sessionRef, s);
+        }
+
+        const loadingText = document.querySelector(".loading");
+        const playerCount = Object.keys(s.players || {}).length;
+
+        if (!s.started) {
+          loadingText.textContent = `warte auf spieler (${playerCount}/2)`;
+        } else {
+          loadingText.style.display = "none";
+        }
 
         for (const p of Object.values(s.players)) {
           if (!Array.isArray(p.hand)) p.hand = [];
@@ -353,7 +434,6 @@
           if (!Array.isArray(prevHands[i])) prevHands[i] = [];
         }
 
-        const playerCount = Object.keys(s.players).length;
         startBtn.style.display =
           !s.started && myIndex === 0 && playerCount >= 2
             ? "block"
@@ -407,6 +487,9 @@
         }
 
         lastState = s;
+        if (s.placements?.length === Object.keys(s.players).length) {
+          showPlacements(s);
+        }
       });
 
 
@@ -454,8 +537,10 @@
           deck,
           topCard: deck.pop(),
           players,
-          winner: null
+          placements: []
         });
+        document.getElementById("lobby").style.display = "none";
+        document.getElementById("center").style.display = "flex";
       };
 
 
@@ -550,7 +635,7 @@
       async function playCard(i) {
         const snap = await get(sessionRef);
         const s = snap.val();
-        if (s.turn !== myIndex || s.winner!=null) return;
+        if (s.turn !== myIndex) return;
 
         const me = s.players[myIndex];
         const card = me.hand[i];
@@ -559,21 +644,26 @@
         me.hand.splice(i,1);
         s.topCard = card;
 
-        if (card.value==="+2") s.drawStack+=2;
-        if (card.value==="+4") s.drawStack+=4;
-        if (card.value==="reverse") s.direction*=-1;
-        if (card.value==="skip")
-          s.turn = (s.turn + s.direction + Object.keys(s.players).length) % Object.keys(s.players).length;
+        if (card.value === "+2") s.drawStack += 2;
+        if (card.value === "+4") s.drawStack += 4;
+        if (card.value === "reverse") s.direction *= -1;
+
+        let nextTurn = nextAliveTurn(s);
+        if (card.value === "skip") {
+          nextTurn = nextAliveTurn({ ...s, turn: nextTurn });
+        }
+        s.turn = nextTurn;
 
         if (card.color === "white") {
           const chosenColor = await chooseColor();
           s.topCard.color = chosenColor;
         }
 
-        if (me.hand.length===0) s.winner=myIndex;
+        if (me.hand.length === 0 && !s.placements.includes(myIndex)) {
+          s.placements.push(myIndex);
+        }
 
-        s.turn = (s.turn + s.direction + Object.keys(s.players).length) % Object.keys(s.players).length;
-        await set(sessionRef,s);
+        await set(sessionRef, s);
       }
 
       async function drawCard() {
@@ -586,7 +676,8 @@
 
         for (let i=0;i<n;i++) me.hand.push(s.deck.pop());
         s.drawStack=0;
-        s.turn = (s.turn + s.direction + Object.keys(s.players).length) % Object.keys(s.players).length;
+        s.turn = nextAliveTurn(s);
+
 
         await set(sessionRef,s);
       }
@@ -741,4 +832,9 @@
 
     </script>
   </body>
+  <div id="resultOverlay" class="overlay hidden">
+    <div style="background:#ffffff4d;padding:30px;border:8px solid #ffffff4d;border-radius:16px;color:white;text-align:center">
+      <div id="resultText"></div>
+    </div>
+  </div>
 </html>

@@ -207,6 +207,7 @@
     <div id="lobby">
       <div class="loading">warte auf spieler</div>
       <button id="startBtn">spiel starten</button>
+      <!-- <button class="toggletips">tipps anzeigen</button> -->
     </div>
     <div id="playerBar"></div>
     <div id="center">
@@ -237,10 +238,24 @@
       let prevHands = null;
       let lastState = null;
       let pendingColorResolve = null;
+      let tips = false;
 
       const COLORS = ["red","yellow","green","blue"];
       const VALUES = ["0","1","2","3","4","5","6","7","8","9","skip","reverse","+2"];
       const startBtn = document.getElementById("startBtn");
+
+      // const tipbutton = document.querySelector(".toggletips");
+      // tipbutton.onclick = toggleTips;
+
+      // function toggleTips() {
+      //   tips = !tips;
+      //   console.log("tips:", tips);
+      //   if (tips) {
+      //     tipbutton.textContent = "tipps verbergen";
+      //   } else {
+      //     tipbutton.textContent = "tipps anzeigen";
+      //   }
+      // }
 
       function chooseColor() {
         return new Promise(resolve => {
@@ -822,7 +837,7 @@
                 "#ffffff"
               );
 
-              if (canPlay(c, s.topCard, s.drawStack) && s.turn === myIndex)
+              if (canPlay(c, s.topCard, s.drawStack) && s.turn === myIndex && tips)
                 b.classList.add("active");
 
 

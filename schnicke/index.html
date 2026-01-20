@@ -185,6 +185,14 @@
     const s = snap.val();
     if (!s) return;
 
+    // 🔒 STATE ABSICHERN
+    s.players ??= {};
+    s.score ??= { 0: 0, 1: 0 };
+    s.choices ??= { 0: null, 1: null };
+    s.round ??= 1;
+    s.winner ??= null;
+    s.matchWinner ??= null;
+
     const count = Object.keys(s.players||{}).length;
     statusEl.textContent =
       s.matchWinner!=null ? "Match beendet"

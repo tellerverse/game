@@ -564,7 +564,7 @@
 
         await set(sessionRef, {
           started: true,
-          turn: 0,
+          turn: Math.random() < 0.5 ? 0 : 1,
           direction: 1,
           drawStack: 0,
           deck,

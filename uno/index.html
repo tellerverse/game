@@ -242,6 +242,7 @@
       let lastState = null;
       let pendingColorResolve = null;
       let tips = false;
+      let lastBotTurn = null;
 
       const COLORS = ["red","yellow","green","blue"];
       const VALUES = ["0","1","2","3","4","5","6","7","8","9","skip","reverse","+2"];
@@ -298,19 +299,20 @@
       }
 
       function nextAliveTurn(s) {
+        console.log("TURN", s.turn, "BOT?", s.players[s.turn]?.isBot);
+
         s.placements ??= [];
-        const ids = Object.keys(s.players).map(Number);
-        let t = s.turn;
+        const ids = Object.keys(s.players).map(Number).sort((a,b)=>a-b);
+
+        let idx = ids.indexOf(s.turn);
 
         do {
-          t = (t + s.direction + ids.length) % ids.length;
-        } while (
-          s.placements.includes(t) ||
-          s.players[t].hand.length === 0
-        );
+          idx = (idx + s.direction + ids.length) % ids.length;
+        } while (s.placements.includes(ids[idx]));
 
-        return t;
+        return ids[idx];
       }
+
 
 
       document.querySelectorAll(".color-card div").forEach(el => {
@@ -534,19 +536,28 @@
         prevTopCard = structuredClone(s.topCard);
         prevTurn = s.turn;
 
-        render(s);
-
         const isBotHost = myIndex === s.host;
 
         if (
-          s.started &&
           isBotHost &&
-          s.players[s.turn]?.isBot
+          s.started &&
+          s.players[s.turn]?.isBot &&
+          lastBotTurn !== s.turn
         ) {
-          runBotTurn(s.turn, structuredClone(s));
+          lastBotTurn = s.turn;
 
+          setTimeout(async () => {
+            const snap2 = await get(sessionRef);
+            const fresh = snap2.val();
+
+            if (fresh && fresh.players[fresh.turn]?.isBot) {
+              await runBotTurn(fresh.turn, fresh);
+            }
+
+          }, 600);
         }
 
+        render(s);
 
         if (pendingPlayAnimation) {
           animateFromPlayerStack(
@@ -609,6 +620,7 @@
 
         await set(sessionRef, {
           started: true,
+          host: s.host ?? 0,
           turn: Math.random() < 0.5 ? 0 : 1,
           direction: 1,
           drawStack: 0,
@@ -806,7 +818,6 @@
       }
 
       async function runBotTurn(botIndex, s) {
-
         const bot = s.players[botIndex];
         const top = s.topCard;
 
@@ -814,55 +825,55 @@
           .map((c,i)=>({c,i}))
           .filter(x => canPlay(x.c, top, s.drawStack));
 
-        // 1️⃣ gleiche Farbe
         let pick = playable.find(x => x.c.color === top.color);
+        if (!pick) pick = playable.find(x => x.c.value === top.value);
 
-        // 2️⃣ gleiche Zahl / Aktion
         if (!pick) {
-          pick = playable.find(x => x.c.value === top.value);
-        }
+          if (s.deck.length === 0) s.deck = createDeck();
 
-        // 3️⃣ ziehen
-        if (!pick) {
           const n = Math.max(1, s.drawStack || 1);
           for (let i=0;i<n;i++) bot.hand.push(s.deck.pop());
           s.drawStack = 0;
+
+          // NEU: nachziehen & nochmal prüfen
+          const lastCard = bot.hand.at(-1);
+          if (canPlay(lastCard, s.topCard, 0)) {
+            bot.hand.pop();
+            s.topCard = lastCard;
+          } 
           s.turn = nextAliveTurn(s);
+
+
           await set(sessionRef, s);
           return;
         }
 
-        // Karte spielen
-        const { c, i } = pick;
+
+        const {c,i} = pick;
         bot.hand.splice(i,1);
         s.topCard = c;
 
-        if (c.value === "+2") s.drawStack += 2;
-        if (c.value === "+4") s.drawStack += 4;
-        if (c.value === "reverse") s.direction *= -1;
+        if (c.value==="+2") s.drawStack+=2;
+        if (c.value==="+4") s.drawStack+=4;
+        if (c.value==="reverse") s.direction*=-1;
 
         let next = nextAliveTurn(s);
-        if (c.value === "skip") {
-          next = nextAliveTurn({ ...s, turn: next });
-        }
+        if (c.value==="skip") next = nextAliveTurn({ ...s, turn: next });
         s.turn = next;
 
-        // Farbwahl bei Wild → meist vorhandene Farbe
-        if (c.color === "white") {
+        if (c.color==="white") {
           const freq = {};
           for (const h of bot.hand) {
-            if (h.color !== "white") freq[h.color] = (freq[h.color]||0)+1;
+            if (h.color!=="white") freq[h.color]=(freq[h.color]||0)+1;
           }
-          s.topCard.color =
-            Object.entries(freq).sort((a,b)=>b[1]-a[1])[0]?.[0] || "red";
+          s.topCard.color = Object.entries(freq).sort((a,b)=>b[1]-a[1])[0]?.[0] || "red";
         }
 
-        if (bot.hand.length === 0 && !s.placements.includes(botIndex)) {
-          s.placements.push(botIndex);
-        }
+        if (bot.hand.length===0 && !s.placements.includes(botIndex)) s.placements.push(botIndex);
 
-        await set(sessionRef, s);
+        await set(sessionRef, s); // <–– schreibt jetzt wirklich
       }
+
 
 
       function render(s) {

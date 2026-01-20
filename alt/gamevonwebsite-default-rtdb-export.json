@@ -1,0 +1,51 @@
+{
+  "games": {
+    "find": {
+      "info": {
+        "color": "#ff30dc",
+        "playerAmount": 2
+      }
+    },
+    "schnicke": {
+      "info": {
+        "color": "#123456",
+        "playerAmount": 2
+      }
+    },
+    "ship": {
+      "info": {
+        "color": "#ff7fca",
+        "playerAmount": 2
+      }
+    },
+    "sudoku": {
+      "info": {
+        "color": "#22cbdc",
+        "playerAmount": 2
+      }
+    },
+    "tik": {
+      "info": {
+        "color": "#1188ff",
+        "playerAmount": 2
+      }
+    },
+    "uno": {
+      "info": {
+        "color": "#123fff",
+        "playerAmount": 5
+      }
+    }
+  },
+  "ipMap": {
+    "109_166_136_207": "moritz am handy",
+    "193_231_19_144": "moritz",
+    "41_223_73_251": "Maria",
+    "41_223_73_252": "Maria",
+    "41_223_73_255": "maria",
+    "41_223_74_154": "Maria",
+    "66_249_88_230": "Gast",
+    "66_249_88_232": "moritz",
+    "86_123_172_47": "moritz"
+  }
+}

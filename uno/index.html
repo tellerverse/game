@@ -11,10 +11,46 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
+        /* background: #000; */
+      }
+
+      .controlcenter {
+        display: flex;
+        flex-direction: column;
+        align-items: left;
+        justify-content: left;
+        margin-top: 100px;
+        background: #ffffff55;
+        border: 3px solid #ffffff55;
+        border-radius: 10px;
+      }
+
+      #botControl, #tipControl {
+        align-content: left;
+        display:none;
+        /* margin:12px; */
+        align-items: center;
+      }
+
+      .controlcenter span{
+        margin: 12px;
+        color: white;
+        font-size: 2rem;
+        
+      }
+
+      #botControl button, #tipControl button {
+        /* margin: 12px; */
+        color: white;
+        font-size: 1.1rem;
+        border: 3px solid #ffffff55;
+        border-radius: 10px;
+        background: #ffffff55;
       }
 
       .loading {
-        padding-bottom: 10px;
+        padding: 10px;
+        padding-bottom: 0px;
       }
 
       #startBtn {
@@ -27,14 +63,10 @@
         border-radius: 10px;
         transition: transform .2s ease, box-shadow .2s ease;
         background: #ffffff55;
-
         color: white;
-
       }
 
-      .active { 
-        outline: 3px solid lime
-      }
+      
 
       .card {
         width: 100px;
@@ -42,6 +74,7 @@
         margin: 5px;
         border-radius: 8px;
         background: var(--card-color, #ffffff);
+        
         border: 4px solid #000;
         outline: 3px solid #000;
         outline-offset: -12px;
@@ -53,6 +86,36 @@
         text-align: center;
         display: flex;
         transition: transform 0.4s ease, left 0.4s ease, top 0.4s ease;
+      }
+
+      .card.active { 
+        box-shadow:
+        0 0 0 5px #fff;
+        background:
+          linear-gradient(
+            150deg,
+            var(--card-color, #ffffff),
+            var(--card-color, #ffffff),
+            var(--card-color, #ffffff),
+            var(--card-color, #ffffff),
+            #ffffff,
+            var(--card-color, #ffffff),
+            var(--card-color, #ffffff),
+            var(--card-color, #ffffff),
+            var(--card-color, #ffffff)
+          );
+
+        background-size:
+          100% 500%;
+
+        background-blend-mode: normal;
+        animation: 2s linear infinite activeshift;
+        /* animation: 3s linear 1s infinite running slide-in; */
+      }
+
+      @keyframes activeshift {
+        0%   { background-position:   0%    100%; }
+        100% { background-position:   0%    0%;   }
       }
 
       .card:hover {
@@ -205,12 +268,19 @@
       <a href="../" style="text-decoration: none;"><h1>mor!tz<br><span style="font-size:1rem">&lt;html&gt;</span>uno<span style="font-size:1rem">&lt;/html&gt;</span></h1></a>
     </header>
     <div id="lobby">
-      <div class="loading">warte auf spieler</div>
-      <button id="startBtn">spiel starten</button>
-      <!-- <button class="toggletips">tipps anzeigen</button> -->
-      <button onclick="setBots(1)">1 Bot</button>
-      <button onclick="setBots(2)">2 Bots</button>
-      <button onclick="setBots(3)">3 Bots</button>
+      <div class="controlcenter">
+        <div class="loading">warte auf spieler</div>
+        <div id="botControl">
+          <span>Bots: <span id="botCount">0</span></span>
+          <button onclick="changeBots(-1)">−</button>
+          <button onclick="changeBots(1)">+</button>
+        </div>
+        <div id="tipControl">
+          <span>Tips:</span>
+          <button class="toggletips">✖️</button>
+        </div>
+        <button id="startBtn">spiel starten</button>
+      </div>
     </div>
     <div id="playerBar"></div>
     <div id="center">
@@ -248,19 +318,22 @@
       const VALUES = ["0","1","2","3","4","5","6","7","8","9","skip","reverse","+2"];
       const startBtn = document.getElementById("startBtn");
 
-      // const tipbutton = document.querySelector(".toggletips");
-      // tipbutton.onclick = toggleTips;
+      const tipbutton = document.querySelector(".toggletips");
+      tipbutton.onclick = toggleTips;
 
-      // function toggleTips() {
-      //   tips = !tips;
-      //   console.log("tips:", tips);
-      //   if (tips) {
-      //     tipbutton.textContent = "tipps verbergen";
-      //   } else {
-      //     tipbutton.textContent = "tipps anzeigen";
-      //   }
-      // }
+      function toggleTips() {
+        tips = !tips;
+        console.log("tips:", tips);
+        if (tips) {
+          tipbutton.textContent = "✔️";
+        } else {
+          tipbutton.textContent = "✖️";
+        }
+      }
 
+      const botCountEl = document.getElementById("botCount");
+      const botControl = document.getElementById("botControl");
+      const tipControl = document.getElementById("tipControl");
       async function setBots(n) {
         if (myIndex !== 0) return;
 
@@ -268,12 +341,14 @@
         const s = snap.val();
         if (s.started) return;
 
+        n = Math.max(0, Math.min(4, n)); // 0–4 Bots
+
         s.botCount = n;
         s.players ??= {};
 
-        // menschliche Spieler behalten
+        // nur Menschen behalten
         const humans = Object.entries(s.players)
-          .filter(([_,p]) => !p.isBot);
+          .filter(([_, p]) => !p.isBot);
 
         s.players = Object.fromEntries(humans);
 
@@ -288,7 +363,13 @@
         await set(sessionRef, s);
       }
 
-      window.setBots = setBots;
+      async function changeBots(delta) {
+        const snap = await get(sessionRef);
+        const s = snap.val();
+        setBots((s.botCount || 0) + delta);
+      }
+
+      window.changeBots = changeBots;
 
       function chooseColor() {
         return new Promise(resolve => {
@@ -484,6 +565,21 @@
 
         const loadingText = document.querySelector(".loading");
         const playerCount = Object.keys(s.players || {}).length;
+        const bots = s.botCount || 0;
+
+        botCountEl.textContent = bots;
+
+        // Bot-Control nur für Host & vor Start
+        botControl.style.display =
+          !s.started && myIndex === 0 ? "flex" : "none";
+        tipControl.style.display =
+          !s.started && myIndex === 0 ? "flex" : "none";
+
+        // Start jetzt auch mit NUR Bots erlaubt
+        startBtn.style.display =
+          !s.started && myIndex === 0 && (playerCount >= 1 || bots > 0)
+            ? "block"
+            : "none";
 
         if (!s.started) {
           loadingText.textContent = `warte auf spieler (${playerCount}/2)`;
@@ -617,11 +713,12 @@
             p.hand.push(deck.pop());
           }
         }
+        const ids = Object.keys(players).map(Number);
 
         await set(sessionRef, {
           started: true,
           host: s.host ?? 0,
-          turn: Math.random() < 0.5 ? 0 : 1,
+          turn: ids[Math.floor(Math.random() * ids.length)],
           direction: 1,
           drawStack: 0,
           deck,
